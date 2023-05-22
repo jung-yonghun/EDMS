@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) SEIN
+  ~ All rights reserved.
+  ~ This software is the confidential and proprietary information of SEIN. ("Confidential Information").
+  -->
+
+<configuration>
+    <contextName>STAGE</contextName>
+    <property name="LOG_HOME" value="C:/EDMS/logs" />
+    <property name="ENV_NAME" value="EDMS_STAGE" />
+
+    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/${ENV_NAME}_ROLLING_LOG.txt</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${LOG_HOME}/${ENV_NAME}_ROLLING_LOG-%d{yyyy-MM-dd}.%i.txt.zip</fileNamePattern>
+            <!-- each file should be at most 10MB, keep 60 days worth of history, but at most 20GB -->
+            <maxFileSize>2MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{100} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="ERROR">
+        <appender-ref ref="ROLLING" />
+    </root>
+
+    <logger name="com.ge.geows" level="ERROR"/>
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="org.springframework.jdbc.datasource" level="OFF"/>
+    <logger name="org.springframework.security.web" level="OFF"/>
+    <logger name="org.springframework.orm" level="OFF"/>
+    <logger name="org.springframework.web.servlet" level="OFF"/>
+    <logger name="org.springframework.boot.web.filter.OrderedRequestContextFilter" level="OFF"/>
+    <logger name="org.springframework.boot.context.web" level="OFF"/>
+</configuration>

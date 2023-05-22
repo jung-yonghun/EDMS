@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) SEIN
+  ~ All rights reserved.
+  ~ This software is the confidential and proprietary information of SEIN. ("Confidential Information").
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.edms.biz.systemManagement.UserMenuAuthMapper">
+    <select id="findUserXAuthXMenuList" resultType="map">
+        WITH AUTH_MENUINFO(menuKey, parentKey, menuKorName, menuEngName, menuPath, menuImageClass, sortKey, sortKorMenu, sortEngMenu, sortPath, sortOrder, subSortOrder, useYn) AS (
+            SELECT
+                menuKey
+                , parentKey
+                , menuKorName
+                , menuEngName
+                , menuPath
+                , menuImageClass
+                , CONVERT(VARCHAR(4000), menuKey) sortKey
+                , CONVERT(VARCHAR(4000), menuKorName) sortKorMenu
+                , CONVERT(VARCHAR(4000), menuEngName) sortEngMenu
+                , CONVERT(VARCHAR(4000), ISNULL(menuPath, '') ) sortPath
+                , sortOrder
+                , subSortOrder
+                , useYn
+            FROM [GEOWS].[dbo].[TBR_SYS_Menu] WITH (NOLOCK)
+            WHERE parentKey = 0
+            AND useYn = 'Y'
+
+            UNION ALL
+
+            SELECT
+                    b.menuKey
+                    , b.parentKey
+                    , b.menuKorName
+                    , b.menuEngName
+                    , b.menuPath
+                    , b.menuImageClass
+                    , CONVERT(VARCHAR(4000), CONVERT(NVARCHAR,c.sortKey) + ' > ' + CONVERT(VARCHAR(4000), b.menuKey)) sortKey
+                    , CONVERT(VARCHAR(4000), CONVERT(NVARCHAR,c.sortKorMenu) + ' > ' + CONVERT(VARCHAR(4000), b.menuKorName)) sortKorMenu
+                    , CONVERT(VARCHAR(4000), CONVERT(NVARCHAR,c.sortEngMenu) + ' > ' + CONVERT(VARCHAR(4000), b.menuEngName)) sortEngMenu
+                    , CONVERT(VARCHAR(4000), CONVERT(NVARCHAR,ISNULL(c.sortPath,'')) + ' > ' + CONVERT(VARCHAR(4000), ISNULL(b.menuPath, '') )) sortPath
+                    , b.sortOrder
+                    , b.subSortOrder
+                    , b.useYn
+            FROM [GEOWS].[dbo].[TBR_SYS_Menu] b WITH (NOLOCK), AUTH_MENUINFO c
+            WHERE b.parentKey = c.menuKey
+            AND b.useYn = 'Y'
+        )
+        SELECT	a.menuKey,
+                a.parentKey, a.menuKorName, a.menuEngName, a.menuPath, a.menuImageClass,
+                a.sortKey, a.sortKorMenu, a.sortEngMenu, a.sortPath, a.sortOrder, a.subSortOrder,
+                LEN(a.sortKey)-LEN(REPLACE(a.sortKey,'>','')) AS 'lvl',
+                STUFF((SELECT ',' + eventCode FROM [GEOWS].[dbo].[TBR_User_MenuAuth] WITH (NOLOCK) WHERE useYn = 'Y' AND (menuKey=b.menuKey) FOR XML PATH ('')),1,1,'') AS 'menuAuth'
+        FROM	AUTH_MENUINFO a WITH (NOLOCK)
+                    INNER JOIN [GEOWS].[dbo].[TBR_User_MenuAuth] b WITH (NOLOCK)
+                    ON a.menuKey = b.menuKey
+                    AND a.useYn = 'Y'
+                    AND b.useYn = 'Y'
+        WHERE b.userKey = #{userKey}
+        GROUP BY a.menuKey, a.parentKey, a.menuKorName, a.menuEngName, a.menuPath, a.menuImageClass,
+                a.sortKey, a.sortKorMenu, a.sortEngMenu, a.sortPath, a.sortOrder, a.subSortOrder,
+                LEN(a.sortKey)-LEN(REPLACE(a.sortKey,'>','')), b.menuKey
+        ORDER BY a.sortOrder, a.subSortOrder
+    </select>
+
+    <update id="syncUserXAuthXMenuList">
+        /* 회원X메뉴권한 메뉴정보 동기화 */
+        UPDATE [GEOWS].[dbo].[TBR_User_MenuAuth]
+        SET menuCode = #{menuCode},
+        menuKorName = #{menuKorName},
+        menuEngName = #{menuEngName}
+        WHERE menuKey = #{menuKey}
+    </update>
+
+    <select id="callProcDeleteUser" statementType="CALLABLE" resultType="map">
+        { call [GEOWS].[dbo].[USP_사용자_사용자정보삭제] ( @argUserId = #{userId} ) }
+    </select>
+
+    <update id="syncPassword">
+        /* 회원패스워드 수정 */
+        UPDATE [soo].[dbo].[CPS_UserInfo]
+        SET userPw = #{userPw}
+        WHERE userId = #{userId}
+    </update>
+</mapper>

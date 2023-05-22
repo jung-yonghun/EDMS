@@ -1,0 +1,2848 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) SEIN
+  ~ All rights reserved.
+  ~ This software is the confidential and proprietary information of SEIN. ("Confidential Information").
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.edms.biz.edmsManagement.EdmsManagementMapper">
+    <select id="findImpoBlStatus" resultType="map">
+        /* EDMS용 수입 상태 */
+        SELECT datas.*
+        FROM (
+	        SELECT top 1 ROW_NUMBER() OVER (ORDER BY Impo_singo_no, Impo_singo_date) AS 'rownum',
+	        Impo_receive_result AS 'impoResResult',
+	        impo_iphang_date AS 'impoIphangDate',
+	        impo_banip_date AS 'impoBanipDate',
+	        Impo_singo_date AS 'impoSingoDate',
+	        Impo_ok_date AS 'impoOkDate',
+	        Impo_mbl_no AS 'impoMblNo',
+	        Impo_mrn_no AS 'impoMrnNo'
+	        FROM ${_defaultDB}.[kcba].[Impo1] WITH (NOLOCK)
+	        where impo_bl_no = #{impoBlNo}
+	        AND Impo_napse_code = #{impoNapseCode}
+	        AND Impo_napse_saup = #{impoNapseSaup}
+	        AND Impo_singo_no = #{impoSingoNo}
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+    <select id="findExpoInvoiceStatus" resultType="map">
+        /* EDMS용 수출 INVOICE 상태 */
+        SELECT datas.*
+        FROM (
+	        SELECT top 1 ROW_NUMBER() OVER (ORDER BY Expo_singo_no, Expo_singo_date) AS 'rownum',
+	        Expo_res_result AS 'expoResResult',
+	        Expo_singo_date AS 'expoSingoDate',
+	        Expo_ok_date AS 'expoOkDate'
+	        FROM ${_defaultDB}.[kcba].[Expo1] WITH (NOLOCK)
+	        where Expo_iv_no = #{expoIvNo}
+	        AND Expo_suchulja_code = #{expoSuchuljaCode}
+	        AND Expo_SuchulSaupNo = #{expoSuchulSaupNo}
+	        AND Expo_singo_no = #{expoSingoNo}
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+    <select id="findImpoPaperList" resultType="map">
+        /* 수입화물통관 면장등록 신고번호 존재 확인 */
+        select impo_key, Impo_bl_no
+          from ${_defaultDB}.kcba.impo1 WITH (NOLOCK)
+		 where Impo_singo_no = #{singoNo}
+    </select>
+
+    <select id="findImpoPaper1List" resultType="map">
+        /* 수입화물통관 면장등록 신고번호 존재 확인 */
+        select impo_key, Impo_bl_no
+          from ${_defaultDB}.kcba.impo1 WITH (NOLOCK)
+		 where Impo_bl_no = #{singoNo}
+    </select>
+
+    <select id="findExpoPaperList" resultType="map">
+        /* 수출화물통관 면장등록 신고번호 존재 확인 */
+        select expo_key, Expo_iv_no
+        from ${_defaultDB}.kcba.expo1 WITH (NOLOCK)
+		where Expo_singo_no = #{singoNo}
+    </select>
+
+    <select id="findExpoPaper1List" resultType="map">
+        /* 수출화물통관 면장등록 신고번호 존재 확인 */
+        select expo_key, Expo_iv_no
+        from ${_defaultDB}.kcba.expo1 WITH (NOLOCK)
+		where Expo_iv_no = #{singoNo}
+    </select>
+
+    <insert id="saveImportTeam">
+		/* 본사수입 팀 저장 */
+		insert into soo.dbo.CPS_EDMS_Team(defaultDB,masterKey,userId,teamCode,addDtTime)
+		select
+		'ncustoms', a.Impo_key, a.UserID, c.teamCode, a.AddDtTime
+		from ncustoms.kcba.impo1 a WITH (NOLOCK), soo.dbo.CPS_UserInfo b WITH (NOLOCK), soo.dbo.CPS_SaveTeam c WITH (NOLOCK)
+		where a.UserID = b.userId
+		and b.userId = c.userId
+		and a.addDtTime > (select MAX(addDtTime) from soo.dbo.CPS_EDMS_Team)
+		and b.defaultDB='ncustoms'
+		and b.useYn='Y'
+		and c.useYn='Y'
+		and c.teamCode != '008'
+	</insert>
+
+    <insert id="saveImportEtcTeam">
+		/* 본사수입 팀 AddDtTime null인 것 저장 */
+		insert into soo.dbo.CPS_EDMS_Team(defaultDB,masterKey,userId,teamCode,addDtTime)
+		select
+		'ncustoms', a.Impo_key, a.UserID, c.teamCode, ''+convert(varchar,DATEPART(yy,getdate())-1)+'0101000000'
+		from ncustoms.kcba.impo1 a WITH (NOLOCK), soo.dbo.CPS_UserInfo b WITH (NOLOCK), soo.dbo.CPS_SaveTeam c WITH (NOLOCK)
+		where a.UserID = b.userId
+		and b.userId = c.userId
+		and b.defaultDB='ncustoms'
+		and b.useYn='Y'
+		and c.useYn='Y'
+		and c.teamCode != '008'
+		and a.AddDtTime is null
+		and a.UserId is not null
+		and a.Impo_year > ''+convert(varchar,DATEPART(yy,getdate())-1)+''
+		and a.Impo_singo_date > ''+convert(varchar,DATEPART(yy,getdate())-1)+'1231'
+		and a.Impo_key not in (select masterKey from soo.dbo.CPS_EDMS_Team where masterKey = a.Impo_key and masterKey like ''+convert(varchar,DATEPART(yy,getdate()))+'%')
+	</insert>
+
+    <select id="findExportUpdateList" resultType="map">
+        /* 본사수출 데이터 업데이트 생성 */
+        select
+		b.exportKey, a.Expo_key, a.Expo_iv_no, a.Expo_singo_no, a.Expo_suchulja_sangho,
+		a.Expo_res_result, a.Expo_ok_date, a.UserID, a.UserNM, a.AddDtTime
+		from ncustoms_sel_040.kcba.expo1 a WITH (NOLOCK), soo.dbo.CPS_EDMS_Export b WITH (NOLOCK)
+		where a.Expo_key = b.expoKey
+		and a.Expo_key in (select expoKey from soo.dbo.CPS_EDMS_Export where expoResResult not in ('수리','취하'))
+		and a.Expo_ok_date != ''
+		and a.UserID is not null
+    </select>
+
+    <insert id="saveExportInsertList">
+        /* 본사수출 데이터 Insert 생성 */
+        insert into soo.dbo.CPS_EDMS_Export(expoKey,expoIvNo,expoSingoNo,expoSangho,expoResResult,expoOkDate,userId,userNM,addDtTime)
+        select
+		Expo_key, Expo_iv_no, Expo_singo_no, Expo_suchulja_sangho,
+		Expo_res_result, Expo_ok_date, UserID, UserNM, AddDtTime
+		from ncustoms_sel_040.kcba.expo1 WITH (NOLOCK)
+		where addDtTime > (select MAX(addDtTime) from soo.dbo.CPS_EDMS_Export)
+    </insert>
+
+    <insert id="saveExportInsertAddList">
+        /* 본사수출 데이터 Insert 중 누락된 것 생성 */
+        insert into soo.dbo.CPS_EDMS_Export(expoKey,expoIvNo,expoSingoNo,expoSangho,expoResResult,expoOkDate,userId,userNM,addDtTime)
+		select
+		Expo_key, Expo_iv_no, Expo_singo_no, Expo_suchulja_sangho,
+		Expo_res_result, Expo_ok_date, UserID, UserNM, AddDtTime
+		from ncustoms_sel_040.kcba.expo1 WITH (NOLOCK)
+		where Expo_key in(
+			select b.Expo_key
+			from ncustoms_sel_040.kcba.Expo1 b WITH (NOLOCK)
+			left outer join soo.dbo.CPS_EDMS_Export a WITH (NOLOCK)
+			on a.expokey = b.Expo_key
+			where b.addDtTime > '20180301000000'
+			and a.exportKey is null
+		)
+    </insert>
+
+    <select id="findCheckImpo1" resultType="map">
+        /* 수입 키 및 신고번호 체크 */
+        select max(impo_key) as 'edmsMkey', max(impo_singo_no) as 'edmsSingoNum', count(impo_singo_no) as 'count'
+		from ${edmsJisaCode}.kcba.impo1 WITH (NOLOCK)
+		where Impo_year > '2016'
+		and Impo_bl_no = #{edmsNum}
+    </select>
+
+    <select id="findCheckExpo1" resultType="map">
+        /* 수출 키 및 신고번호 체크 */
+        select max(expo_key) as 'edmsMkey', max(Expo_singo_no) as 'edmsSingoNum', count(Expo_singo_no) as 'count'
+		from ${edmsJisaCode}.kcba.expo1 WITH (NOLOCK)
+		where Expo_year > '2016'
+		and Expo_iv_no = #{edmsNum}
+    </select>
+
+    <select id="findCheckBanip1" resultType="map">
+        /* 갈음 키 및 신고번호 체크 */
+        select max(Ban1_key) as 'edmsMkey', max(BAN1_SINGO_NO) as 'edmsSingoNum', count(BAN1_SINGO_NO) as 'count'
+		from ${edmsJisaCode}.kcba.ban1 WITH (NOLOCK)
+		where Ban1_year > '2016'
+		and Ban1_Invoice = #{edmsNum}
+    </select>
+
+    <select id="findEdmsTeamWithNotClassificationFileList" resultType="map">
+        /* EDMS 본사 수입분류 리스트 */
+        SELECT datas.*
+        FROM (
+        select ROW_NUMBER() OVER (ORDER BY a.Impo_Key desc) AS 'rownum',
+		a.Impo_key, a.Impo_singo_no, a.Impo_mbl_no, a.Impo_bl_no, a.Impo_mrn_no, a.Impo_napse_sangho, a.Impo_napse_saup, a.Impo_receive_result, a.Impo_ok_date, a.UserNM,
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+		    and k.EdmsSingoNo = a.Impo_singo_no
+		    and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsSingoNo = a.Impo_singo_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select top 1 k.deliveryRequestKey from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryRequestKey',
+		(select top 1 k.deliveryStatus from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryStatus',
+		(select CASE WHEN COUNT(k.SDADKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAD100] k
+		  where k.SingoNo = a.Impo_singo_no
+		    and k.RpaGbn = '2'
+		    and k.UseYn = 'Y') as 'rpaStatus',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory in ('A1012','A0002','A0005')
+			and k.EdmsNo = a.Impo_bl_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.EdmsFileExt in ('pdf','PDF')
+			and k.UseYn = 'Y')  as 'invoiceCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.saup = a.Impo_napse_saup
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.impo1 a WITH (NOLOCK), soo.dbo.CPS_EDMS_Team b WITH (NOLOCK)
+		<where>
+		    AND a.Impo_key = b.masterKey
+		    AND a.Impo_bl_no = ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Impo_napse_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='teamCode != null and teamCode != ""'>AND b.teamcode = #{teamCode}</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Impo_bl_no LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Impo_receive_result LIKE #{edmsStatus} + '%'</if>
+            <if test='attchDocGbn != null and attchDocGbn != ""'>AND a.impo_result_AttchDocGbn = #{attchDocGbn}</if>
+            <if test='edmsJungJung != null and edmsJungJung != ""'>
+                <choose>
+                    <when test='edmsJungJung == "수입사전"'>AND a.Impo_receive_result in ('전제','미결') AND a.impo_result_AttchDocGbn = '전제(사전)'</when>
+                    <when test='edmsJungJung == "수입사후"'>AND a.Impo_receive_result = '자수' AND a.impo_result_AttchDocGbn = '전제(사후)'</when>
+                </choose>
+            </if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Impo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+            <if test='edmsFileNo != null and edmsFileNo != ""'>AND (a.Impo_file_no1 LIKE '%' + #{edmsFileNo} + '%' or a.Impo_file_no2 LIKE '%' + #{edmsFileNo} + '%')</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        union all
+        select ROW_NUMBER() OVER (ORDER BY a.Impo_Key desc) AS 'rownum',
+		a.Impo_key, a.Impo_singo_no, a.Impo_mbl_no, a.Impo_bl_no, a.Impo_mrn_no, a.Impo_napse_sangho, a.Impo_napse_saup, a.Impo_receive_result, a.Impo_ok_date, a.UserNM,
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+		    and k.EdmsSingoNo = a.Impo_singo_no
+		    and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsNo = a.Impo_bl_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select top 1 k.deliveryRequestKey from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryRequestKey',
+		(select top 1 k.deliveryStatus from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryStatus',
+		(select CASE WHEN COUNT(k.SDADKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAD100] k
+		  where k.SingoNo = a.Impo_singo_no
+		    and k.RpaGbn = '2'
+		    and k.UseYn = 'Y') as 'rpaStatus',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory in ('A1012','A0002','A0005')
+			and k.EdmsNo = a.Impo_bl_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.EdmsFileExt in ('pdf','PDF')
+			and k.UseYn = 'Y')  as 'invoiceCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.saup = a.Impo_napse_saup
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.impo1 a, soo.dbo.CPS_EDMS_Team b
+		<where>
+		    AND a.Impo_key = b.masterKey
+		    AND a.Impo_bl_no != ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Impo_napse_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='teamCode != null and teamCode != ""'>AND b.teamcode = #{teamCode}</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Impo_bl_no LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Impo_receive_result LIKE #{edmsStatus} + '%'</if>
+            <if test='attchDocGbn != null and attchDocGbn != ""'>AND a.impo_result_AttchDocGbn = #{attchDocGbn}</if>
+            <if test='edmsJungJung != null and edmsJungJung != ""'>
+                <choose>
+                    <when test='edmsJungJung == "수입사전"'>AND a.Impo_receive_result in ('전제','미결') AND a.impo_result_AttchDocGbn = '전제(사전)'</when>
+                    <when test='edmsJungJung == "수입사후"'>AND a.Impo_receive_result = '자수' AND a.impo_result_AttchDocGbn = '전제(사후)'</when>
+                </choose>
+            </if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Impo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+            <if test='edmsFileNo != null and edmsFileNo != ""'>AND (a.Impo_file_no1 LIKE '%' + #{edmsFileNo} + '%' or a.Impo_file_no2 LIKE '%' + #{edmsFileNo} + '%')</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.Impo_key desc
+    </select>
+
+    <select id="findEdmsWithNotClassificationFileList" resultType="map">
+        /* EDMS 지사 수입분류 리스트 */
+        SELECT datas.*
+        FROM (
+        select ROW_NUMBER() OVER (ORDER BY a.Impo_Key desc) AS 'rownum',
+		a.Impo_key, a.Impo_singo_no, a.Impo_mbl_no, a.Impo_bl_no, a.Impo_mrn_no, a.Impo_napse_sangho,  a.Impo_napse_saup, a.Impo_receive_result, a.Impo_ok_date, a.UserNM,
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+		    and k.EdmsSingoNo = a.Impo_singo_no
+		    and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsSingoNo = a.Impo_singo_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select top 1 k.deliveryRequestKey from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryRequestKey',
+		(select top 1 k.deliveryStatus from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryStatus',
+		(select CASE WHEN COUNT(k.SDADKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAD100] k
+		  where k.SingoNo = a.Impo_singo_no
+		    and k.RpaGbn = '2'
+		    and k.EndYn = 'Y') as 'rpaStatus',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory in ('A0001','A0002','A0005')
+			and k.EdmsNo = a.Impo_bl_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.EdmsFileExt in ('pdf','PDF')
+			and k.UseYn = 'Y')  as 'invoiceCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.saup = a.Impo_napse_saup
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.impo1 a
+		<where>
+		    AND a.Impo_bl_no = ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Impo_napse_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Impo_bl_no LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Impo_receive_result LIKE #{edmsStatus} + '%'</if>
+            <if test='attchDocGbn != null and attchDocGbn != ""'>AND a.impo_result_AttchDocGbn = #{attchDocGbn}</if>
+            <if test='edmsJungJung != null and edmsJungJung != ""'>
+                <choose>
+                    <when test='edmsJungJung == "수입사전"'>AND a.Impo_receive_result in ('전제','미결') AND a.impo_result_AttchDocGbn = '전제(사전)'</when>
+                    <when test='edmsJungJung == "수입사후"'>AND a.Impo_receive_result = '자수' AND a.impo_result_AttchDocGbn = '전제(사후)'</when>
+                </choose>
+            </if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Impo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+            <if test='edmsFileNo != null and edmsFileNo != ""'>AND (a.Impo_file_no1 LIKE '%' + #{edmsFileNo} + '%' or a.Impo_file_no2 LIKE '%' + #{edmsFileNo} + '%')</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        union all
+        select ROW_NUMBER() OVER (ORDER BY a.Impo_Key desc) AS 'rownum',
+		a.Impo_key, a.Impo_singo_no, a.Impo_mbl_no, a.Impo_bl_no, a.Impo_mrn_no, a.Impo_napse_sangho, a.Impo_napse_saup, a.Impo_receive_result, a.Impo_ok_date, a.UserNM,
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+		    and k.EdmsSingoNo = a.Impo_singo_no
+		    and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsNo = a.Impo_bl_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select top 1 k.deliveryRequestKey from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryRequestKey',
+		(select top 1 k.deliveryStatus from soo.dbo.TBR_Delivery_Request k
+		  where k.hblNo = a.Impo_bl_no
+		    and k.customerCode = a.Impo_napse_code
+		    and k.singoNo = a.Impo_singo_no
+		    and k.useYn = 'Y') as 'deliveryStatus',
+		(select CASE WHEN COUNT(k.SDADKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAD100] k
+		  where k.SingoNo = a.Impo_singo_no
+		    and k.RpaGbn = '2'
+		    and k.UseYn = 'Y') as 'rpaStatus',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory in ('A0001','A0002','A0005')
+			and k.EdmsNo = a.Impo_bl_no
+			and k.EdmsParentGbn = 'IMPORT'
+			and k.EdmsFileExt in ('pdf','PDF')
+			and k.UseYn = 'Y')  as 'invoiceCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.saup = a.Impo_napse_saup
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.impo1 a
+		<where>
+		    AND a.Impo_bl_no != ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Impo_napse_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Impo_bl_no LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Impo_receive_result LIKE #{edmsStatus} + '%'</if>
+            <if test='attchDocGbn != null and attchDocGbn != ""'>AND a.impo_result_AttchDocGbn = #{attchDocGbn}</if>
+            <if test='edmsJungJung != null and edmsJungJung != ""'>
+                <choose>
+                    <when test='edmsJungJung == "수입사전"'>AND a.Impo_receive_result in ('전제','미결') AND a.impo_result_AttchDocGbn = '전제(사전)'</when>
+                    <when test='edmsJungJung == "수입사후"'>AND a.Impo_receive_result = '자수' AND a.impo_result_AttchDocGbn = '전제(사후)'</when>
+                </choose>
+            </if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Impo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+            <if test='edmsFileNo != null and edmsFileNo != ""'>AND (a.Impo_file_no1 LIKE '%' + #{edmsFileNo} + '%' or a.Impo_file_no2 LIKE '%' + #{edmsFileNo} + '%')</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.Impo_key desc
+    </select>
+
+    <select id="findEdmsExportWithNotClassificationFileList" resultType="map">
+        /* EDMS 본사 수출분류 리스트 */
+        SELECT datas.*
+        FROM (
+        select ROW_NUMBER() OVER (ORDER BY a.exportKey desc) AS 'rownum',
+		a.expoKey as 'Expo_key', a.expoSingoNo as 'Expo_singo_no', a.expoIvNo  as 'Expo_iv_no', a.expoSangho  as 'Expo_suchulja_sangho',
+		a.expoResResult as 'Expo_res_result', a.expoOkDate as 'Expo_ok_date', a.userNM as 'UserNM',
+		(select k.Expo_SuchulSaupNo
+		   from ncustoms_sel_040.kcba.expo1 k
+		  where k.expo_singo_no = a.expoSingoNo) as 'expoSaup',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+			and k.EdmsSingoNo = a.expoSingoNo
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsSingoNo = a.expoSingoNo
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.sangho = a.expoSangho
+			and k.useYn = 'Y')  as 'notCount'
+		from soo.dbo.CPS_EDMS_Export a
+		<where>
+		    AND a.expoIvNo = ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.expoSangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.expoIvNo LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.expoResResult LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.expoSingoNo LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.expoOkDate BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.expoOkDate BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.userId = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.userNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        union all
+        select ROW_NUMBER() OVER (ORDER BY a.exportKey desc) AS 'rownum',
+		a.expoKey as 'Expo_key', a.expoSingoNo as 'Expo_singo_no', a.expoIvNo  as 'Expo_iv_no', a.expoSangho  as 'Expo_suchulja_sangho',
+		a.expoResResult as 'Expo_res_result', a.expoOkDate as 'Expo_ok_date', a.userNM as 'UserNM',
+		(select k.Expo_SuchulSaupNo
+		   from ncustoms_sel_040.kcba.expo1 k
+		  where k.expo_singo_no = a.expoSingoNo) as 'expoSaup',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+			and k.EdmsSingoNo = a.expoSingoNo
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsNo = a.expoIvNo
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.sangho = a.expoSangho
+			and k.useYn = 'Y')  as 'notCount'
+		from soo.dbo.CPS_EDMS_Export a
+		<where>
+		    AND a.expoIvNo != ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.expoSangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.expoIvNo LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.expoResResult LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.expoSingoNo LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.expoOkDate BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.userId = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.userNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.Expo_key desc
+    </select>
+
+    <select id="findEdmsExWithNotClassificationFileList" resultType="map">
+        /* EDMS 지사 수출분류 리스트 */
+        SELECT datas.*
+        FROM (
+        select ROW_NUMBER() OVER (ORDER BY a.Expo_Key desc) AS 'rownum',
+		a.Expo_key, a.Expo_singo_no, a.Expo_iv_no, a.Expo_suchulja_sangho, a.Expo_res_result, a.Expo_ok_date, a.UserNM,
+		a.Expo_SuchulSaupNo as 'expoSaup',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+			and k.EdmsSingoNo = a.Expo_singo_no
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsSingoNo = a.Expo_singo_no
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.sangho = a.Expo_suchulja_sangho
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.expo1 a
+		<where>
+		    AND a.Expo_iv_no = ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Expo_suchulja_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Expo_iv_no LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Expo_res_result LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Expo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.Expo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Expo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        union all
+        select ROW_NUMBER() OVER (ORDER BY a.Expo_Key desc) AS 'rownum',
+		a.Expo_key, a.Expo_singo_no, a.Expo_iv_no, a.Expo_suchulja_sangho, a.Expo_res_result, a.Expo_ok_date, a.UserNM,
+		a.Expo_SuchulSaupNo as 'expoSaup',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+			and k.EdmsSingoNo = a.Expo_singo_no
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsNo = a.Expo_iv_no
+			and k.EdmsParentGbn = 'EXPORT'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.sangho = a.Expo_suchulja_sangho
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.expo1 a
+		<where>
+		    AND a.Expo_iv_no != ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Expo_suchulja_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Expo_iv_no LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Expo_res_result LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Expo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.Expo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Expo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.Expo_key desc
+    </select>
+
+    <select id="findEdmsExBanipWithNotClassificationFileList" resultType="map">
+        /* EDMS 갈음 수출분류 리스트 */
+        SELECT datas.*
+        FROM (
+        select ROW_NUMBER() OVER (ORDER BY a.Ban1_key desc) AS 'rownum',
+		a.Ban1_key, a.BAN1_SINGO_NO, a.Ban1_Invoice, a.Ban1_gong_sangho, a.Ban1_snd_chk, a.Ban1_verify_date, a.UserNM,
+		a.Ban1_gong_saup,
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+			and k.EdmsSingoNo = a.BAN1_SINGO_NO
+			and k.EdmsParentGbn = 'BANIP'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsSingoNo = a.BAN1_SINGO_NO
+			and k.EdmsParentGbn = 'BANIP'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.sangho = a.Ban1_gong_sangho
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.ban1 a
+		<where>
+		    AND a.Ban1_Invoice = ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Ban1_gong_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Ban1_Invoice LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Ban1_snd_chk LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.BAN1_SINGO_NO LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.Ban1_verify_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        union all
+        select ROW_NUMBER() OVER (ORDER BY a.Ban1_key desc) AS 'rownum',
+		a.Ban1_key, a.BAN1_SINGO_NO, a.Ban1_Invoice, a.Ban1_gong_sangho, a.Ban1_snd_chk, a.Ban1_verify_date, a.UserNM,
+		a.Ban1_gong_saup,
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory = 'B0001'
+			and k.EdmsSingoNo = a.BAN1_SINGO_NO
+			and k.EdmsParentGbn = 'BANIP'
+			and k.UseYn = 'Y') as 'filePaperCount',
+		(select CASE WHEN COUNT(k.SDAAKey)=0 then 'X' else 'O' end from CPS.[dbo].[SDAA100] k
+		  where k.EdmsFileCategory != 'B0001'
+			and k.EdmsNo = a.Ban1_Invoice
+			and k.EdmsParentGbn = 'BANIP'
+			and k.UseYn = 'Y')  as 'fileCount',
+		(select CASE WHEN COUNT(k.notKey)=0 then 'X' else 'O' end from soo.dbo.CPS_EDMS_NotCustomer k
+		  where k.sangho = a.Ban1_gong_sangho
+			and k.useYn = 'Y')  as 'notCount'
+		from ${_defaultDB}.kcba.ban1 a
+		<where>
+		    AND a.Ban1_Invoice != ''
+            <if test='edmsComName != null and edmsComName != ""'>AND a.Ban1_gong_sangho LIKE '%' + #{edmsComName} + '%'</if>
+            <if test='edmsNo != null and edmsNo != ""'>AND a.Ban1_Invoice LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Ban1_snd_chk LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.BAN1_SINGO_NO LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.Ban1_verify_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND a.UserNM LIKE '%' + #{edmsMasterUserName} + '%'
+            </if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.Ban1_key desc
+    </select>
+
+    <select id="findEdmsPreFileList" resultType="map">
+        select EdmsNo
+        from CPS.[dbo].[SDAA100]
+        <where>
+		    AND EdmsParentGbn not in ('NOTCLASS','PAPER','TPAPER','BLINV')
+		    AND EdmsMKey = ''
+		    AND EdmsSingoNo = ''
+            <if test='edmsNo != null and edmsNo != ""'>AND EdmsNo LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "regDay"'>AND EditDtm BETWEEN #{strFromDate}+'000000' AND #{strToDate}+'235959'</when>
+                </choose>
+            </if>
+            <if test='edmsGubun != null and edmsGubun != ""'>
+                AND EdmsParentGbn = #{edmsGubun}
+            </if>
+            <if test='_defaultDB != null and _defaultDB != ""'>
+                AND EdmsJisaCode = #{_defaultDB}
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND AddUserId = #{edmsMasterUserId}
+            </if>
+        </where>
+		group by EdmsNo
+    </select>
+
+    <select id="findEdmsMasterWithFileList" resultType="map">
+        /* EDMS 마스터X파일 리스트 */
+        SELECT datas.*
+        FROM (
+        SELECT ROW_NUMBER() OVER (ORDER BY SDAAKey desc) AS 'rownum',
+        SDAAKey,EdmsParentGbn,EdmsNo,EdmsSingoNo,EdmsFileCategory,EdmsFilePath,EdmsSaveFileNm,EdmsOrgFileNm,
+		EdmsFileSize,EdmsFileExt,UseYn,AddUserId,AddUserNm,AddDtm,EditUserId,EditUserNm,EditDtm,CommonYn
+        FROM CPS.[dbo].[SDAA100]
+        <where>
+            AND UseYn = 'Y'
+            <if test='edmsKey != null and edmsKey != ""'>AND SDAAKey = CAST(#{edmsKey} AS NUMERIC)</if>
+            <if test='edmsGubun != null and edmsGubun != ""'>AND EdmsParentGbn LIKE #{edmsGubun} + '%'</if>
+            <if test='edmsNo != null and edmsNo != "" and edmsSingoNo != null and edmsSingoNo != ""'>AND ((EdmsNo = #{edmsNo} and CommonYn='Y') OR (EdmsSingoNo = #{edmsSingoNo} and CommonYn='N'))</if>
+            <if test='edmsNo == "" and edmsSingoNo != null and edmsSingoNo != ""'>AND EdmsSingoNo = #{edmsSingoNo}</if>
+            <if test='edmsNo != null and edmsNo != "" and edmsSingoNo == ""'>AND EdmsNo = #{edmsNo}</if>
+            <if test='edmsJisaCode != null and edmsJisaCode != ""'>AND EdmsJisaCode = #{edmsJisaCode}</if>
+            <if test='edmsFileCategory != null and edmsFileCategory != ""'>AND EdmsFileCategory in ${edmsFileCategory}</if>
+            <if test='edmsFileExt != null and edmsFileExt != ""'>AND EdmsFileExt in ('pdf','PDF')</if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+    <select id="findCheckEdmsMasterImportList" resultType="map">
+        /* 각지사별 EDMS MASTER에 수입 Key와 신고번호 넣어주기 */
+        select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ay.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_ay'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_bs.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_bs'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ca.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_ca'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_cj.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_cj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_cw.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_cw'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_dj.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_dj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_gm.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_gm'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ic.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_ic'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_jj.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_jj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_pj.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_pj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_pt.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_pt'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_sel4.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_sel4'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_sn.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_sn'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_us.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_us'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_yj.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_yj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ys.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='ncustoms_ys'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.impo_key) as 'edmsMkey', max(b.impo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, demoNcustomsPt.kcba.impo1 b
+		where a.edmsNum=b.impo_bl_no
+		and b.Impo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='IMPORT'
+		and a.edmsJisaCode='demoNcustomsPt'
+		group by a.edmsKey
+    </select>
+
+    <select id="findCheckEdmsMasterExportList" resultType="map">
+        /* 각지사별 EDMS MASTER에 수출 Key와 신고번호 넣어주기 */
+        select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_sel_040.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_sel_040'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ay.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_ay'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_bs.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_bs'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ca.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_ca'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_cj.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_cj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_cw.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_cw'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_dj.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_dj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_gm.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_gm'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ic.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_ic'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_jj.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_jj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_pj.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_pj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_pt.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_pt'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_sel4.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_sel4'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_sn.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_sn'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_us.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_us'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_yj.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_yj'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, ncustoms_ys.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='ncustoms_ys'
+		group by a.edmsKey
+		union all
+		select a.edmsKey, max(b.expo_key) as 'edmsMkey', max(b.expo_singo_no) as 'edmsSingoNum'
+		from soo.dbo.CPS_EDMS_Master a, demoNcustomsPt.kcba.expo1 b
+		where a.edmsNum=b.expo_iv_no
+		and b.Expo_year > '2016'
+		and a.checkYn='N'
+		and a.edmsGubun='EXPORT'
+		and a.edmsJisaCode='demoNcustomsPt'
+		group by a.edmsKey
+    </select>
+
+    <select id="findCheckList" resultType="map">
+        /* EDMS Master 값을 Attach에도 넣어주기 */
+        select
+		a.Expo_iv_no as 'edmsNum', a.Expo_key as 'edmsMkey',  a.Expo_singo_no as 'edmsSingoNum'
+		from ncustoms_sel_040.kcba.expo1 a WITH (NOLOCK), soo.dbo.CPS_EDMS_Export b WITH (NOLOCK)
+		where a.Expo_key = b.expoKey
+		and a.Expo_key in (select expoKey from soo.dbo.CPS_EDMS_Export where expoResResult in ('수리','취하'))
+		and a.Expo_ok_date != ''
+		and b.expoSangho='머크일렉트로닉머티리얼즈(주)'
+		and b.expoOkDate between '20190701' and '20190731'
+		and a.UserID is not null
+
+        /*select a.edmsFileKey, b.edmsKey , b.edmsMkey, b.edmsSingoNum
+		from  soo.dbo.CPS_EDMS_AttachFile a, soo.dbo.CPS_EDMS_Master b
+		where a.edmsNum = b.edmsNum
+		and a.edmsJisaCode = b.edmsJisaCode
+		and b.checkYn = 'N'
+		and b.edmsMkey != ''*/
+    </select>
+
+    <select id="findChangeBlList" resultType="map">
+        /* 수리 이전 수입 BL 바뀐것 Master 변경 */
+        select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_ay.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ay'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_bs.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_bs'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_ca.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ca'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_cj.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_cj'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_cw.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_cw'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_dj.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_dj'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_gm.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_gm'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_ic.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ic'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_jj.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_jj'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_pj.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_pj'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_pt.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_pt'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_sel4.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_sel4'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_sn.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_sn'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_us.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_us'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_yj.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_yj'
+		union all
+		select b.edmsSingoNum, a.Impo_bl_no
+		 from ncustoms_ys.kcba.impo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.edmsSingoNum
+		and a.Impo_bl_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ys'
+    </select>
+
+    <select id="findChangeBlFileList" resultType="map">
+        /* 수리 이전 수입 BL 바뀐것 Attach 변경 */
+        select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_ay.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ay'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_bs.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_bs'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_ca.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ca'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_cj.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_cj'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_cw.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_cw'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_dj.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_dj'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_gm.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_gm'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_ic.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ic'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_jj.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_jj'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_pj.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_pj'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_pt.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_pt'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_sel4.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sel4'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_sn.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sn'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_us.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_us'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_yj.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_yj'
+		and a.Impo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Impo_bl_no
+		 from ncustoms_ys.kcba.impo1 a, CPS.[dbo].[SDAA100] b
+		where a.Impo_year > '2016'
+		and a.Impo_receive_result not in ('수리','취하')
+		and a.Impo_singo_no=b.EdmsSingoNo
+		and a.Impo_bl_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ys'
+		and a.Impo_singo_no !=''
+    </select>
+
+    <select id="findChangeInvList" resultType="map">
+        /* 수리 이전 수출 INV 바뀐것 Master 변경 */
+        select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_sel_040.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_sel_040'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_ay.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ay'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_bs.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_bs'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_ca.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ca'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_cj.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_cj'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_cw.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_cw'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_dj.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_dj'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_gm.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_gm'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_ic.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ic'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_jj.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_jj'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_pj.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_pj'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_pt.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_pt'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_sel4.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_sel4'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_sn.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_sn'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_us.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_us'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_yj.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_yj'
+		union all
+		select b.edmsSingoNum, a.Expo_iv_no
+		 from ncustoms_ys.kcba.expo1 a, soo.dbo.CPS_EDMS_Master b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.edmsSingoNum
+		and a.Expo_iv_no != b.edmsNum
+		and b.edmsJisaCode='ncustoms_ys'
+    </select>
+
+    <select id="findChangeInvFileList" resultType="map">
+        /* 수리 이전 수출 INV 바뀐것 Attache 변경 */
+        select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_sel_040.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sel_040'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_ay.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ay'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_bs.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_bs'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_ca.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ca'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_cj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_cj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_cw.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_cw'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_dj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_dj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_gm.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_gm'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_ic.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ic'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_jj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_jj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_pj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_pj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_pt.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_pt'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_sel4.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sel4'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_sn.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sn'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_us.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_us'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_yj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_yj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_iv_no
+		 from ncustoms_ys.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and a.Expo_res_result not in ('수리','취하')
+		and a.Expo_singo_no=b.EdmsSingoNo
+		and a.Expo_iv_no != b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ys'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+    </select>
+
+    <select id="findChangeInvSingoList" resultType="map">
+        /* 수출 신고번호 없는것 채워넣기 */
+        select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_sel_040.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sel_040'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_ay.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ay'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_bs.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_bs'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_ca.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ca'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_cj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_cj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_cw.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_cw'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_dj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_dj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_gm.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_gm'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_ic.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ic'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_jj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_jj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_pj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_pj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_pt.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_pt'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_sel4.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sel4'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_sn.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_sn'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_us.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_us'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_yj.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_yj'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+		union all
+		select b.SDAAKey, a.Expo_singo_no, a.Expo_key
+		 from ncustoms_ys.kcba.expo1 a, CPS.[dbo].[SDAA100] b
+		where a.Expo_year > '2016'
+		and b.edmsSingoNum = ''
+		and a.Expo_iv_no = b.EdmsNo
+		and b.EdmsJisaCode='ncustoms_ys'
+		and a.Expo_iv_no !=''
+		and a.Expo_singo_no !=''
+    </select>
+
+    <select id="findRequestFileList" resultType="map">
+        select SDAAKey, EdmsParentGbn, EdmsJisaCode, EdmsNo
+		from CPS.[dbo].[SDAA100]
+		where EdmsFileStatus='R'
+		and EdmsMkey =''
+    </select>
+
+    <select id="findImportRequestCheck" resultType="map">
+        select impo_key as 'key', Impo_singo_no as 'singono'
+          from ${defaultDB}.kcba.impo1 WITH (NOLOCK)
+		 where Impo_bl_no = #{edmsNum}
+    </select>
+
+    <select id="findExportRequestCheck" resultType="map">
+        select Expo_key as 'key', Expo_singo_no as 'singono'
+          from ${defaultDB}.kcba.expo1 WITH (NOLOCK)
+		 where Expo_iv_no = #{edmsNum}
+    </select>
+
+    <select id="findItemFileDownList" resultType="map">
+        /* 자재 파일 일괄다운로드 */
+        select replace(replace(a.Mdivision_code,'/','_'),'.','_') as 'Mdivision_code', replace(a.Mmodel_code,'"','') as 'Mmodel_code', b.*
+        from CPS.[dbo].[MAAA100] a WITH (NOLOCK), CPS.[dbo].[ENAC100] b WITH (NOLOCK)
+		<where>
+		    and  a.Mcount_no = b.FKeyMngNo
+			and b.FTableNm='MAAA100'
+			and a.UseYn='Y'
+			and b.UseYn='Y'
+			and a.Mdivision_code !=''
+			and b.FileExt in ('PDF','DOCX','XLSX','HWP','XLS','PPTX','DOC','XLSM')
+			<if test='edmsComSaup != null and edmsComSaup != ""'>AND a.Mco_com = #{edmsComSaup}</if>
+        </where>
+        order by a.Mmodel_code
+    </select>
+
+    <select id="findFileDownList" resultType="map">
+        /* 파일 수입 일괄다운로드 */
+        SELECT datas.*
+        FROM (
+	        select ROW_NUMBER() OVER (ORDER BY a.edmsFileKey DESC) AS 'rownum', a.*
+	        from CPS.[dbo].[SDAA100] a WITH (NOLOCK), ${edmsJisaCode}.kcba.Impo1 b WITH (NOLOCK)
+			<where>
+			    AND a.EdmsSingoNo = b.Impo_singo_no
+			    <!--and a.edmsSingoNum = b.Impo_singo_no-->
+		        AND a.UseYn= 'Y'
+				<if test='edmsFileCategory != null and edmsFileCategory != ""'>AND a.EdmsFileCategory = #{edmsFileCategory}</if>
+				<if test='singoNo != null and singoNo != ""'>AND b.Impo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+				<!-- if test='singoNum != null and singoNum != ""'>AND b.Impo_singo_no in ${singoNum}</if-->
+	            <if test='edmsComName != null and edmsComName != ""'>AND b.Impo_napse_sangho = #{edmsComName}</if>
+	            <if test='edmsComCode != null and edmsComCode != ""'>AND b.Impo_napse_code = #{edmsComCode}</if>
+	            <if test='edmsNo != null and edmsNo != ""'>AND a.EdmsNo LIKE '%' + #{edmsNo} + '%'</if>
+	            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+	                <choose>
+	                    <when test='_DateType == "addDay"'>AND b.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+	                </choose>
+	            </if>
+	        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        order by EdmsNo
+    </select>
+
+    <select id="findFileDownExList" resultType="map">
+        /* 파일 수출 일괄다운로드 */
+        SELECT datas.*
+        FROM (
+	        select ROW_NUMBER() OVER (ORDER BY a.SDAAKey DESC) AS 'rownum', a.*
+	        from CPS.[dbo].[SDAA100] a WITH (NOLOCK), ${edmsJisaCode}.kcba.Expo1 b WITH (NOLOCK)
+			<where>
+			    AND a.EdmsNo = b.Expo_iv_no
+		        AND a.UseYn= 'Y'
+				<if test='edmsFileCategory != null and edmsFileCategory != ""'>AND a.EdmsFileCategory = #{edmsFileCategory}</if>
+				<if test='singoNo != null and singoNo != ""'>AND b.Expo_singo_no LIKE '%' + #{singoNo} + '%'</if>
+	            <if test='edmsComName != null and edmsComName != ""'>AND b.Expo_suchulja_sangho LIKE '%' + #{edmsComName} + '%'</if>
+	            <if test='edmsComCode != null and edmsComCode != ""'>AND b.Expo_suchulja_code = #{edmsComCode}</if>
+	            <if test='edmsNo != null and edmsNo != ""'>AND a.EdmsNo LIKE '%' + #{edmsNo} + '%'</if>
+	            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+	                <choose>
+	                    <when test='_DateType == "addDay"'>AND b.Expo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+	                </choose>
+	            </if>
+	        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        order by EdmsNo
+    </select>
+
+    <select id="findAutoLoginList" resultType="map">
+        /* 자동로그인 */
+        select a.user_id, b.msg_stat, c.logon_cd, d.userKey, d.userName, d.userGradeA, d.defaultDB, d.userEmail, d.userDepart
+		from [122.99.247.2].[NeoBizboxS2].[BX].[TCMH_USERLOGIN] a,
+		[122.99.247.2].NeoBizboxS2.BX.TMSG_USER b,
+		[122.99.247.2].NeoBizboxS2.BX.TCMG_USER c,
+		soo.dbo.CPS_UserInfo d
+		where a.user_id = b.user_id
+		  and a.user_id = c.user_id
+		  and c.logon_cd = d.userId
+		  and a.login_ip = #{clientIp}
+		  and a.yyyymmdd = #{currentDate}
+		  and a.co_id = 0
+		  and b.msg_stat > 0
+    </select>
+
+    <select id="findInvoiceCheck" resultType="map">
+        /* Inv No 변경된 것 */
+        select
+        a.exportKey, b.Expo_iv_no, a.expoIvNo, a.expoSingoNo
+		from soo.dbo.CPS_EDMS_Export a left outer join ncustoms_sel_040.kcba.Expo1 b
+		on a.expokey = b.Expo_key
+		and a.expoIvNo != b.Expo_iv_no
+		where a.addDtTime LIKE #{year} + '%'
+		and b.Expo_key is not null
+		order by a.addDtTime
+    </select>
+
+    <update id="updateExport">
+		/* Inv No 변경*/
+		update soo.dbo.CPS_EDMS_Export
+		set expoIvNo 	= #{Expo_iv_no}
+		where exportKey = #{exportKey}
+	</update>
+
+    <update id="updateAttachFile">
+		/* Inv No 변경*/
+		update CPS.[dbo].[SDAA100]
+		set EdmsNo 	 = #{Expo_iv_no}
+		where EdmsNo 	 = #{expoIvNo}
+		and EdmsSingoNo = #{expoSingoNo}
+	</update>
+
+
+    <select id="selectImportZeissDecide" resultType="map">
+	    SELECT
+	    a.startKey,
+	    impo.Impo_key,
+		impo.Impo_receive_result,
+		impo.Impo_cs,
+		a.startNum,
+		a.addDtm,
+		impo.Impo_iphang_date,
+		impo.Impo_banip_date,
+		impo.Impo_jubsu_date,
+		impo.Impo_ok_date,
+		impo.Impo_singo_no,
+		impo.Impo_mbl_no,
+		impo.Impo_gonggub_sangho,
+		impo.IMPO_OK_DTTM,
+		rms.dbo.fn_NEW_DATE_VIEW('D1',impo.Impo_iphang_date) as 'Impo_iphang_date1',
+		rms.dbo.fn_NEW_DATE_VIEW('D1',impo.Impo_jubsu_date) as 'Impo_jubsu_date1',
+		rms.dbo.fn_NEW_DATE_VIEW('D1',impo.Impo_ok_date) as 'Impo_ok_date1',
+		a.startNote,
+		a.startPoNo,
+		a.startReferenceNo1,
+		rms.dbo.fn_NEW_DATE_VIEW('D1',a.startReferenceNo1) as 'startReferenceNo3',
+		case when impo.Impo_iphang_date != '' then rms.dbo.fn_NEW_DATE_VIEW('D1',impo.Impo_iphang_date)
+		else '미입항' end as 'Impo_iphang',
+		a.startLocation,
+		a.startIssueContent,
+		a.startJisaCode,
+		case when impo.Impo_singo_date != ''
+		then
+		(select
+		case when(
+		charindex('IVNO.',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0) = 1
+		and LEN(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ','')) <![CDATA[ < ]]> 40
+		and charindex('PONO',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0) = 0
+		)
+		then LEFT(replace(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),'IVNO.',''),10)
+		when(
+		charindex('IVNO.',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0) = 1
+		and LEN(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ','')) <![CDATA[ > ]]> 40
+		and charindex('PONO',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0) = 0
+		)
+		then LEFT(replace(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),'IVNO.',''),10)
+		when(
+		charindex('IVNO.',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0) = 1
+		and LEN(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ','')) <![CDATA[ > ]]> 40
+		)
+		then LEFT(replace(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),'IVNO.',''),
+		charindex('PONO.',replace(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),'IVNO.',''))-1)
+		else ''
+		end as 'IVNO'
+		from ${_defaultDB}.[kcba].[Impo2]
+		where impo.Impo_key = Imlan_key
+		and Imlan_jechl_lan = '001')
+		else a.startReferenceNo2
+		end as 'startReferenceNo2',
+		case when ISNULL(impo.Impo_Key, '') = '' then a.startPoNo
+		else
+		ISNULL((select
+			case when(
+			charindex('PONO',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0) <![CDATA[ > ]]> 0
+			)
+			then left(right(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),LEN(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''))-charindex('PONO.',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0)-4),
+			charindex('달러환율',right(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),LEN(replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''))-charindex('PONO.',replace(replace(Imlan_gije1+ '' +Imlan_gije2+ '' +Imlan_gije3+ '' +Imlan_gije4+ '' +Imlan_gije5+ '' +Imlan_gije6+ '' +Imlan_gije7+ '' +Imlan_gije8+ '' +Imlan_gije9+ '' +Imlan_gije10,'*',''),' ',''),0)-4))-1)
+			else a.startPoNo
+			end as 'PONO'
+			from ${_defaultDB}.[kcba].[Impo2]
+			where impo.Impo_key = Imlan_key
+			and Imlan_jechl_lan = '001'), '')
+		end AS 'startPoNo1',
+		case when ISNULL(impo.Impo_jubsu_date,0) = '0'
+		then 1
+		else ISNULL((SELECT count(Impo_key) FROM ${_defaultDB}.[kcba].[Impo1] WITH (NOLOCK) WHERE impo.Impo_Key = Impo_Key AND (ISNULL(impo.Impo_ok_date, '') = '' and ISNULL(impo.Impo_jubsu_date, '') = '')), 0)
+		end as 'decideCnt',
+		ISNULL(rvimpo.Impo_banip_date + REPLICATE('0',14-LEN(rvimpo.Impo_banip_date)), '00000000000000') as 'banip_date',
+		ISNULL(rvimpo.Impo_jubsu_date + REPLICATE('0',14-LEN(rvimpo.Impo_jubsu_date)), '00000000000000') as 'jubsu_date',
+		replace(replace(replace(CONVERT(CHAR(19), GETDATE(), 120),'-',''),':',''),' ','') as 'now_date',
+		case when ISNULL(rvimpo.Impo_banip_date + REPLICATE('0',14-LEN(rvimpo.Impo_banip_date)), '00000000000000') = '00000000000000' then ''
+			when ISNULL(rvimpo.Impo_banip_date + REPLICATE('0',14-LEN(rvimpo.Impo_banip_date)), '00000000000000') != '00000000000000'
+			and ISNULL(impo.Impo_jubsu_date + REPLICATE('0',14-LEN(impo.Impo_jubsu_date)), '00000000000000') = '00000000000000' then
+			ISNULL(DATEDIFF(DD,left(ISNULL(rvimpo.Impo_banip_date + REPLICATE('0',14-LEN(rvimpo.Impo_banip_date)), '00000000000000'),8),left(replace(replace(replace(CONVERT(CHAR(19), GETDATE(), 120),'-',''),':',''),' ',''),8)),'')
+			else ''
+			end as 'aa',
+		case when ISNULL(rvimpo.Impo_banip_date + REPLICATE('0',14-LEN(rvimpo.Impo_banip_date)), '00000000000000') = '00000000000000' then ''
+		     when ISNULL(impo.Impo_jubsu_date + REPLICATE('0',14-LEN(impo.Impo_jubsu_date)), '00000000000000') = '00000000000000' then ''
+			 else ISNULL(DATEDIFF(DD,left(rvimpo.Impo_banip_date,8),left(impo.Impo_jubsu_date,8)),'')
+			end as 'bb'
+		FROM [soo].[dbo].[CPS_StartInfo] a WITH (NOLOCK)
+		LEFT OUTER JOIN ${_defaultDB}.[kcba].[Impo1] impo WITH (NOLOCK)
+		ON impo.Impo_bl_no = a.startNum
+		AND impo.Impo_napse_saup = a.startTaxpayerNum
+		LEFT OUTER JOIN [rms].[dbo].[recv_impo1] rvimpo WITH (NOLOCK)
+		ON impo.Impo_bl_no = rvimpo.Impo_bl_no
+		AND impo.Impo_napse_saup = rvimpo.Impo_napse_saup
+		where a.useYn = 'Y'
+		and a.startGubun = 'IMPORT'
+		and a.startJisaCode = #{_defaultDB}
+	    <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+            <choose>
+                <when test='_DateType == "add_Day"'>AND a.startReferenceNo1 BETWEEN #{strFromDate} AND #{strToDate}</when>
+                <when test='_DateType == "iphang_Day"'>AND impo.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                <when test='_DateType == "banip_Day"'>AND impo.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                <when test='_DateType == "singo_Day"'>AND impo.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                <when test='_DateType == "ok_Day"'>AND impo.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+            </choose>
+        </if>
+        <if test='taxNum != null and taxNum != ""'>
+            <choose>
+                <when test='taxNum == "all"'>AND a.startTaxpayerNum IN (select userSaup from soo.dbo.CPS_SaveCustomer where userKey = #{ID} and useYn='Y')</when>
+                <when test='taxNum != "all"'>AND a.startTaxpayerNum = #{taxNum}</when>
+            </choose>
+        </if>
+        <if test='_Undecided != null and _Undecided != ""'>AND (ISNULL(impo.Impo_ok_date, '') = '' and ISNULL(impo.Impo_jubsu_date, '') = '')</if>
+        <if test='startNum != null and startNum != ""'>AND a.startNum LIKE '%' + #{startNum} + '%'</if>
+        <if test='singoNum != null and singoNum != ""'>AND impo.Impo_singo_no LIKE '%' + #{singoNum} + '%'</if>
+        <if test='Impo_gonggub_sangho != null and Impo_gonggub_sangho != ""'>AND impo.Impo_gonggub_sangho LIKE '%' + #{Impo_gonggub_sangho} + '%'</if>
+        <if test='_TodayData != null and _TodayData != ""'>AND (impo.Impo_singo_date = CONVERT(VARCHAR, GETDATE(), 112) OR impo.Impo_ok_date = CONVERT(VARCHAR, GETDATE(), 112))</if>
+        <if test='location != null and location != ""'>AND a.startLocation = #{location}</if>
+        <if test='hour != null and hour != ""'>AND a.addDtm between #{hour1} and #{hour}</if>
+        order by a.startKey desc
+	</select>
+
+
+
+
+
+
+
+    <select id="findEdmsMasterList" resultType="map">
+        /* EDMS 마스터 리스트 */
+        SELECT datas.*
+        FROM (
+	        SELECT ROW_NUMBER() OVER (ORDER BY a.startKey) AS 'rownum',
+			a.startKey, a.startTaxpayerTradeName, a.startTaxpayerNum, a.startNum
+			FROM soo.dbo.CPS_StartInfo a WITH (NOLOCK)
+	        <where>
+	            AND a.useYn	  = 'Y'
+	            and a.startJisaCode = #{startJisaCode}
+	            AND not EXISTS (select * from ${startJisaCode}.kcba.impo1 where Impo_bl_no=a.startNum)
+	            AND a.startTaxpayerNum in (
+					select userSaup from soo.dbo.CPS_SaveCustomer
+					where useYn='Y'
+					and userKey in (select userId from soo.dbo.CPS_SaveTeam
+									where useYn='Y'
+									and teamCode=#{teamCode})
+				)
+	            <if test='startGubun != null and startGubun != ""'>AND a.startGubun = #{startGubun}</if>
+	            <if test='startTaxpayerTradeName != null and startTaxpayerTradeName != ""'>AND a.startTaxpayerTradeName LIKE '%' + #{startTaxpayerTradeName} + '%'</if>
+	            <if test='startNum != null and startNum != ""'>AND a.startNum LIKE '%' + #{startNum} + '%'</if>
+	        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.startKey desc
+    </select>
+
+
+
+
+
+
+
+    <select id="findEdmsMasterStatusGroupCountList" resultType="map">
+        /* EDMS 마스터 상태별 건수 리스트 */
+        SELECT datas.*
+        FROM (
+        SELECT ROW_NUMBER() OVER (ORDER BY a.edmsStatus) AS 'rownum',
+        a.edmsStatus, COUNT(a.edmsStatus) AS 'edmsStatusCount'
+        FROM [soo].[dbo].[TBR_EDMS_Master] a WITH (NOLOCK)
+        <where>
+            AND a.useYn = 'Y'
+            /* TBR_EDMS_Master */
+            <if test='edmsKey != null and edmsKey != ""'>AND a.edmsKey = CAST(#{edmsKey} AS NUMERIC) /* edmsKey(PK) */</if>
+            <if test='edmsGubun != null and edmsGubun != ""'>AND a.edmsGubun LIKE #{edmsGubun} + '%' /* edmsGubun */</if>
+            <if test='edmsUploadType != null and edmsUploadType != ""'>AND a.edmsUploadType LIKE #{edmsUploadType} + '%' /* edmsUploadType */</if>
+            <if test='edmsComKey != null and edmsComKey != ""'>AND a.edmsComKey = CAST(#{edmsComKey} AS NUMERIC) /* edmsComKey */</if>
+            <if test='edmsComName != null and edmsComName != ""'>AND a.edmsComName LIKE '%' + #{edmsComName} + '%' /* edmsComName */</if>
+            <if test='jisaCode != null and jisaCode != ""'>AND a.jisaCode = #{jisaCode} /* jisaCode */</if>
+            <if test='teamCode != null and teamCode != ""'>AND a.teamCode LIKE #{teamCode} + '%' /* teamCode */</if>
+            <if test='edmsComCode != null and edmsComCode != ""'>AND a.edmsComCode LIKE #{edmsComCode} + '%' /* edmsComCode */</if>
+            <if test='edmsComNum != null and edmsComNum != ""'>AND a.edmsComNum LIKE #{edmsComNum} + '%' /* edmsComNum */</if>
+            <if test='edmsNum != null and edmsNum != ""'>AND a.edmsNum LIKE #{edmsNum} + '%' /* edmsNum */</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.edmsStatus LIKE #{edmsStatus} + '%' /* edmsStatus */</if>
+            <if test='singoNum != null and singoNum != ""'>AND a.singoNum LIKE #{singoNum} + '%' /* singoNum */</if>
+            <if test='divisionSingoYn != null and divisionSingoYn != ""'>AND a.divisionSingoYn LIKE #{divisionSingoYn} + '%' /* divisionSingoYn */</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "addDay"'>AND a.addDay BETWEEN #{strFromDate} AND #{strToDate} /* addDay */</when>
+                    <when test='_DateType == "editDay"'>AND a.editDay BETWEEN #{strFromDate} AND #{strToDate} /* editDay */</when>
+                    <when test='_DateType == "iphangDay"'>AND a.iphangDay BETWEEN #{strFromDate} AND #{strToDate} /* iphangDay */</when>
+                    <when test='_DateType == "banipDay"'>AND a.banipDay BETWEEN #{strFromDate} AND #{strToDate} /* banipDay */</when>
+                    <when test='_DateType == "singoDay"'>AND a.singoDay BETWEEN #{strFromDate} AND #{strToDate} /* singoDay */</when>
+                    <when test='_DateType == "suriDay"'>AND a.suriDay BETWEEN #{strFromDate} AND #{strToDate} /* suriDay */</when>
+                    <when test='_DateType == "banchulDay"'>AND a.banchulDay BETWEEN #{strFromDate} AND #{strToDate} /* banchulDay */</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND (a.addUserId = #{edmsMasterUserId} OR a.editUserId = #{edmsMasterUserId} ) /* edmsMasterUserId */
+            </if>
+            <if test='edmsMasterUserName != null and edmsMasterUserName != ""'>
+                AND (a.addUserName = #{edmsMasterUserName} OR a.editUserName = #{edmsMasterUserName} ) /* edmsMasterUserName */
+            </if>
+        </where>
+        GROUP BY a.edmsStatus
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+    <select id="findCustomsClearanceByUnregisteredEdmsMasterList" resultType="map">
+        /* 통관미등록 리스트(EDMS) */
+        SELECT datas.*
+        FROM (
+        SELECT impos.*
+        FROM (
+        SELECT distinct a.impo_bl_no AS 'BLNO',
+        'IMPORT' AS 'BIZTYPE', #{_defaultDB} AS 'JISA', #{teamCode} AS 'TEAM',
+        a.Impo_napse_code AS 'CODE', a.Impo_napse_sangho AS 'SANGHO', a.Impo_napse_saup AS 'SAUPNO',
+        c.customerKey AS 'CKEY', a.UserID AS 'UserID', a.UserNM AS 'UserNM', a.Impo_singo_no AS 'SINGO'
+        FROM ${_defaultDB}.[kcba].[Impo1] a WITH (NOLOCK), soo_MST.dbo.TBR_MST_Customer c WITH (NOLOCK)
+        <where>
+            and c.customerDB = #{_defaultDB}
+        	and a.Impo_napse_code = c.customerCode
+        	and (a.Impo_napse_saup = c.customerTaxNum or a.Impo_napse_saup = c.customerYeogwunNum)
+            AND NOT EXISTS (
+	            SELECT *
+	            FROM [soo].[dbo].[TBR_EDMS_Master] b WITH (NOLOCK)
+	            WHERE a.impo_napse_saup = b.edmsComNum
+	            AND a.Impo_napse_code 	= b.edmsComCode
+	            AND a.impo_bl_no 		= b.edmsNum
+	            AND b.edmsGubun 		= 'IMPORT'
+	            AND b.jisaCode 			= #{_defaultDB}
+	            AND b.useYn				= 'Y'
+            )
+            <if test='_dateType != null and _dateType != "ALL" and (startDay != null and startDay != "") and (endDay != null and endDay != "")'>
+                <choose>
+                    <when test='_dateType == "singoDay"'>AND a.impo_singo_date BETWEEN #{startDay} AND #{endDay} /* singoDay */</when>
+                    <when test='_dateType == "okDay"'>AND a.impo_ok_date BETWEEN #{startDay} AND #{endDay} /* okDay */</when>
+                </choose>
+            </if>
+            <if test='_customsUserId != null and _customsUserId != ""'>AND a.UserId = #{_customsUserId}</if>
+            <if test='impoNapseSangho != null and impoNapseSangho != ""'>AND a.Impo_napse_sangho LIKE '%' + #{impoNapseSangho} + '%'</if>
+            <if test='impoBlNo != null and impoBlNo != ""'>AND a.Impo_bl_no LIKE '%' + #{impoBlNo} + '%'</if>
+            <if test='impoSingoNo != null and impoSingoNo != ""'>AND a.Impo_singo_no LIKE '%' + #{impoSingoNo} + '%'</if>
+        </where>
+        ) impos
+
+        UNION ALL
+
+        SELECT expos.*
+        FROM (
+        SELECT distinct a.Expo_iv_no AS 'BLNO',
+        'EXPORT' AS 'BIZTYPE', #{_defaultDB} AS 'JISA', #{teamCode} AS 'TEAM',
+        a.Expo_suchulja_code AS 'CODE', a.Expo_suchulja_sangho AS 'SANGHO', a.Expo_SuchulSaupNo AS 'SAUPNO',
+        c.customerKey AS 'CKEY', a.UserID AS 'UserID', a.UserNM AS 'UserNM', a.Expo_singo_no AS 'SINGO'
+        FROM ${_defaultDB}.[kcba].[Expo1] a WITH (NOLOCK), soo_MST.dbo.TBR_MST_Customer c WITH (NOLOCK)
+        <where>
+            and c.customerDB = #{_defaultDB}
+        	and a.Expo_suchulja_code = c.customerCode
+        	and (a.Expo_SuchulSaupNo = c.customerTaxNum or a.Expo_SuchulSaupNo = c.customerYeogwunNum)
+            AND NOT EXISTS (
+	            SELECT *
+	            FROM [soo].[dbo].[TBR_EDMS_Master] b WITH (NOLOCK)
+	            WHERE a.Expo_SuchulSaupNo 	= b.edmsComNum
+	            AND a.Expo_suchulja_code 	= b.edmsComCode
+	            AND a.Expo_iv_no 			= b.edmsNum
+	            AND b.edmsGubun 			= 'EXPORT'
+	            AND b.jisaCode 				= #{_defaultDB}
+	            AND b.useYn					= 'Y'
+            )
+            <if test='_dateType != null and _dateType != "ALL" and (startDay != null and startDay != "") and (endDay != null and endDay != "")'>
+                <choose>
+                    <when test='_dateType == "singoDay"'>AND a.Expo_singo_date BETWEEN #{startDay} AND #{endDay} /* singoDay */</when>
+                    <when test='_dateType == "okDay"'>AND a.Expo_ok_date BETWEEN #{startDay} AND #{endDay} /* okDay */</when>
+                </choose>
+            </if>
+            <if test='_customsUserId != null and _customsUserId != ""'>AND a.UserId = #{_customsUserId}</if>
+            <if test='impoNapseSangho != null and impoNapseSangho != ""'>AND a.Expo_suchulja_sangho LIKE '%' + #{impoNapseSangho} + '%'</if>
+        </where>
+        ) expos
+        ) datas
+        <where>
+            <if test='BIZTYPE != null and BIZTYPE != ""'>AND datas.BIZTYPE LIKE #{BIZTYPE} + '%' /* BIZTYPE */</if>
+        </where>
+    </select>
+
+    <select id="findEdmsDivisionCopyTargetList" resultType="map">
+        /* 분할건Copy 대상 리스트(EDMS) */
+        SELECT datas.*
+        FROM (
+        SELECT ROW_NUMBER() OVER (ORDER BY a.Impo_key) AS 'rownum',
+        a.Impo_napse_code AS 'impoNapseCode', b.customerKey AS 'customerKey', b.customerCode AS 'customerCode', b.customerName AS 'customerName', b.customerTaxNum AS
+        'customerTaxNum',
+        a.Impo_napse_saup AS 'impoNapseSaup', a.Impo_receive_result AS 'impoReceiveResult',
+        a.Impo_bl_no AS 'impoBlNo', a.Impo_singo_no AS 'impoSingoNo',
+        a.Impo_mbl_no AS 'impoMblNo', a.Impo_mrn_no AS 'impoMrnNo',
+        a.Impo_iphang_date AS 'impoIphangDate', a.Impo_banip_date AS 'impoBanipDate', a.Impo_singo_date AS 'impoSingoDate', a.Impo_ok_date AS 'impoOkDate'
+        FROM [ncustoms_pj].[kcba].[Impo1] a WITH (NOLOCK)
+        INNER JOIN [soo_MST].[dbo].[TBR_MST_Customer] b WITH (NOLOCK)
+        ON b.customerDB = 'ncustoms_pj'
+        AND b.customerCode = a.Impo_napse_code
+        AND b.customerTaxNum = a.Impo_napse_saup
+        AND b.useYn = 'Y'
+        WHERE a.Impo_napse_saup = #{impoNapseSaup}
+        AND a.Impo_bl_no = #{impoBlNo}
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+    <select id="findExpoInvoiceList" resultType="map">
+        /* EDMS용 수출 INVOICE 리스트(20160902 항목추가가능성 있음) */
+        SELECT datas.*
+        FROM (
+        SELECT ROW_NUMBER() OVER (ORDER BY a.Expo_iv_no) AS 'rownum',
+        a.Expo_iv_no, a.Expo_SuchulSaupNo, a.Expo_suchulja_code, a.Expo_suchulja_sangho, COUNT(*) AS 'expoInvoiceCount'
+        FROM [ncustoms_pj].[kcba].[Expo1] a WITH (NOLOCK)
+        WHERE a.Expo_SuchulSaupNo = #{geowsTaxNum}
+        <if test='expoKey != null and expoKey != ""'>AND a.Expo_key = #{expoKey} /* Expo_key(PK) */</if>
+        <if test='expoIvNo != null and expoIvNo != ""'>AND a.Expo_iv_no LIKE #{expoIvNo} + '%' /* Expo_iv_no */</if>
+        <if test='expoSuchulSaupNo != null and expoSuchulSaupNo != ""'>AND a.Expo_SuchulSaupNo LIKE #{expoSuchulSaupNo} + '%' /* Expo_SuchulSaupNo */</if>
+        <if test='expoSuchuljaCode != null and expoSuchuljaCode != ""'>AND a.Expo_suchulja_code LIKE #{expoSuchuljaCode} + '%' /* Expo_suchulja_code */</if>
+        <if test='expoSuchuljaSangho != null and expoSuchuljaSangho != ""'>AND a.Expo_suchulja_sangho LIKE #{expoSuchuljaSangho} + '%' /* Expo_suchulja_sangho */</if>
+        GROUP BY a.Expo_iv_no, a.Expo_SuchulSaupNo, a.Expo_suchulja_code, a.Expo_suchulja_sangho
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+    <select id="findTeamXUserListWithAuth" resultType="map">
+		/* 권한별 선택가능 팀 리스트(팀) */
+		select teamName, teamCode
+		from soo.dbo.CPS_SaveTeam
+		WHERE useYn = 'Y'
+		<if test='_Auth != "admin"'>
+		  <if test='_userId != null and _userId != ""'>AND userId = #{_userId}</if>
+		</if>
+		GROUP BY teamName, teamCode
+	</select>
+
+    <select id="findTeamXUserListWithAuth1" resultType="map">
+		/* 권한별 선택가능 팀 리스트(팀) */
+		SELECT 'B' AS 'groupCode', a.team_seq AS 'teamSeq', a.team_name AS 'teamName', a.team_code AS 'teamCode'
+		FROM [soo].[dbo].[TBR_User_TeamXUser] a WITH (NOLOCK)
+			INNER JOIN [soo].[dbo].[TBR_User_Team] b WITH (NOLOCK)
+			ON b.team_useYn = 'Y'
+			AND b.team_seq = a.team_seq
+		WHERE a.ut_useYn = 'Y'
+		AND NOT EXISTS ( SELECT *
+							FROM [soo].[dbo].[TBR_User_UserSavedCustomer] b WITH (NOLOCK)
+							WHERE b.usc_group = 'B'
+							AND b.usc_userSeq = (SELECT [soo].[dbo].[UFN_commonUserInfo](#{_userId}, 'userSeq'))
+							AND b.usc_EntrepreneurNo=a.team_seq
+							AND b.usc_tradeCode=a.team_code )
+		<if test='_Auth != "admin"'>
+			<if test='_userId != null and _userId != ""'>AND a.ur_seq = (SELECT [soo].[dbo].[UFN_commonUserInfo](#{_userId}, 'userSeq'))</if>
+		</if>
+		<if test='teamSeq != null and teamSeq != ""'>AND a.team_seq LIKE [soo].[dbo].[UFN_공통_replaceSc](#{teamSeq}) + '%'	/* 팀시퀀스 */</if>
+		<if test='teamName != null and teamName != ""'>AND a.team_name LIKE [soo].[dbo].[UFN_공통_replaceSc](#{teamName}) + '%'	/* 팀명 */</if>
+		<if test='teamCode != null and teamCode != ""'>AND a.team_code LIKE [soo].[dbo].[UFN_공통_replaceSc](#{teamCode}) + '%'	/* 팀코드 */</if>
+		GROUP BY a.team_name, a.team_code, a.team_seq
+	</select>
+
+    <select id="findCustomerList" resultType="map">
+		SELECT a.customerKey AS 'KEYS', a.customerCode AS 'CODE', a.customerTaxNum AS 'TAXNUM', a.customerName AS 'NAME', a.customerYeogwunNum AS 'subTAXNUM'
+		FROM [soo_MST].[dbo].[TBR_MST_Customer] a WITH (NOLOCK)
+		WHERE a.customerDB = [soo].[dbo].[UFN_공통_replaceSc](#{_defaultDB})
+		<if test='KEYS != null and KEYS != ""'> AND a.customerKey = [soo].[dbo].[UFN_공통_replaceSc](#{KEYS})</if>
+		<if test='CODE != null and CODE != ""'> AND a.customerCode LIKE [soo].[dbo].[UFN_공통_replaceSc](#{CODE}) + '%'</if>
+		<if test='NAME != null and NAME != ""'> AND a.customerName LIKE [soo].[dbo].[UFN_공통_replaceSc](#{NAME}) + '%'</if>
+		<if test='TAXNUM != null and TAXNUM != ""'> AND a.customerTaxNum LIKE [soo].[dbo].[UFN_공통_replaceSc](#{TAXNUM}) + '%'</if>
+		<if test='SEQ != null and SEQ != ""'> and a.customerKey not in (
+			select utc_tradeKey from [soo].[dbo].[TBR_User_TeamXCustomer]
+			where ut_team_seq = #{SEQ}
+			  and utc_useYn = 'Y')
+		</if>
+		ORDER BY a.customerCode desc
+	</select>
+
+    <select id="callSyncCustomerIndividualInfo" statementType="CALLABLE" resultType="map">
+        {call [soo_MST].[dbo].[USP_ETL_SYNC_Customer_개별](
+        @DB=#{db},
+        @CODE=#{code},
+        @addUserId=#{addUserId}
+        )}
+    </select>
+
+    <select id="findCmmnCodeList" resultType="map">
+	    SELECT CODE, NAME
+		FROM [soo].[dbo].[TBR_CD_MASTER] WITH (NOLOCK)
+		WHERE M_CODE = [soo].[dbo].[UFN_공통_replaceSc](#{mCode})
+		AND USEYN = 'Y'
+		<if test='geCode != null and geCode != ""'> AND CODE <![CDATA[>=]]> #{geCode} </if>
+		ORDER BY SORT_ORDER
+	</select>
+
+    <select id="findImpoMasterList" resultType="map">
+        /* 수입화물통관 impo1 조회 */
+        SELECT datas.*
+        FROM (
+        SELECT ROW_NUMBER() OVER (ORDER BY a.Impo_key DESC) AS 'rownum',
+        a.Impo_key, a.Impo_bl_no, a.Impo_mbl_no, a.Impo_singo_no, a.Impo_singo_date, a.Impo_Ok_date, a.Impo_hanggu_name,
+        a.Impo_pojang_su, a.Impo_total_jung, a.Impo_jung_danwi, a.Impo_pojang_danwi,
+        a.Impo_napse_code, a.Impo_napse_sangho, a.Impo_napse_saup,
+        a.Impo_napse_name, a.Impo_napse_tel, a.Impo_napse_email, a.Impo_napse_juso,
+        a.Impo_segwan, a.Impo_jangch_buho, a.Impo_jangch_name, a.Impo_jangch_jangso, a.Impo_banip_date, a.IMPO_OK_DTTM
+        FROM ${_defaultDB}.[kcba].[Impo1] a WITH (NOLOCK)
+        WHERE 1=1
+        <if test='impoSingoNo != null and impoSingoNo != ""'>AND a.Impo_singo_no = #{impoSingoNo}</if>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+    </select>
+
+
+
+
+
+
+
+
+    <insert id="saveNcomCustomer">
+		/* 통관업체와 선적서류업체 동기화 */
+		insert into soo_MST.dbo.TBR_MST_Customer(customerDB,customerCode,customerName,customerGubun,customerTaxNum,customerUptae,customerJong,customerUniqueCode,customerCeoName,customerPostNum,customerAddress,customerTelNum,customerFaxNum,updatedDate,useYn,addUserId,addDate)
+		select #{_defaultDB},Deal_code,Deal_sangho,Deal_saupgbn,Deal_saup,Deal_upte,Deal_jong,Deal_tong,Deal_name,Deal_post,Deal_juso,Deal_tel,Deal_fax,'20170901400000','Y','SYSTEM',GETDATE()
+		from ${_defaultDB}.kcba.dDeal
+		where Deal_code in (
+		  select a.deal_code from ${_defaultDB}.kcba.dDeal a
+			left OUTER JOIN soo_MST.dbo.TBR_MST_Customer b
+			on  a.deal_code = b.customerCode
+			and b.customerDB=#{_defaultDB}
+			where b.customerCode is null
+		)
+		<selectKey keyProperty="rslt" resultType="java.lang.Long" order="AFTER">SELECT IDENT_CURRENT('soo_MST.dbo.TBR_MST_Customer')</selectKey>
+	</insert>
+
+    <select id="selectCustomer" resultType="map">
+        select sangho, saup
+        from soo.dbo.CPS_Customer
+		where 1=1
+		<if test='sangho != null and sangho != ""'>AND sangho LIKE '%' + #{sangho} + '%'</if>
+		<if test='jisa != null and jisa != ""'>AND jisa = #{jisa}</if>
+    </select>
+
+    <select id="selectCustomer1" resultType="map">
+        select Deal_code, Deal_saup, Deal_sangho
+        from ${_defaultDB}.kcba.dDeal
+		where 1=1
+		<if test='sangho != null and sangho != ""'>AND Deal_sangho LIKE '%' + #{sangho} + '%'</if>
+    </select>
+
+    <select id="getJisaUser" resultType="map">
+        select userId
+        from soo.dbo.CPS_UserInfo
+		where defaultDB = #{defaultDB}
+		and useYn='Y'
+		and userGradeA in ('C','D')
+    </select>
+
+    <select id="getUserList" resultType="map">
+        select userId, userName, userDepart, userJikchk
+        from soo.dbo.CPS_UserInfo
+		where useYn='Y'
+		and userGradeA in ('A','B','C','D')
+		<if test='userName != null and userName != ""'>AND userName LIKE '%' + #{userName} + '%'</if>
+		<if test='userId != null and userId != ""'>AND userId = #{userId}</if>
+		order by userName
+    </select>
+
+    <select id="selectImportFieldStatusList" resultType="map">
+        SELECT
+		Impo_napse_sangho, impo_damdang_name, Impo_cs, Impo_jangch_name, Impo_singo_date,
+		UserNm, Impo_jangch_buho, Impo_jangch_name, impo_segwan,
+		STUFF((
+        SELECT ','+ imlan_jechl_lan
+        FROM ${_defaultDB}.kcba.impo2
+        where Imlan_key = (select impo_key from ${_defaultDB}.kcba.impo1
+		where Impo_singo_no = #{singoNo})
+		and Imlan_cs_gumsa1 IN  ( 'O','R','T','W','Y' )
+		        FOR XML PATH('')
+		    ), 1, 1, '') AS imlan_jechl_lan,
+		Impo_napse_code, Impo_napse_saup
+		FROM ${_defaultDB}.[kcba].[Impo1] WITH (NOLOCK)
+		where impo_singo_no = #{singoNo}
+    </select>
+
+    <select id="selectImportJungFieldStatusList" resultType="map">
+        select
+		Imjung_napse_sangho, Imjung_damdang_name, Imjung_sinchung_date, Imjung_segwan
+		from ${_defaultDB}.kcba.Imjung1 WITH (NOLOCK)
+		where Imjung_singo_no = #{singoNo}
+    </select>
+
+    <select id="selectExportFieldStatusList" resultType="map">
+        SELECT
+		Expo_suchulja_sangho, expo_SeDmdngNm, Expo_singo_date, Expo_segwan, Expo_suchulja_code, Expo_SuchulSaupNo
+		FROM ${_defaultDB}.[kcba].[Expo1] WITH (NOLOCK)
+		where expo_singo_no = #{singoNo}
+    </select>
+
+    <select id="selectExportJungFieldStatusList" resultType="map">
+        select
+		Ejj1_suchul_sangho, Ejj_SeDmdngNm, Ejj1_sinchung_date, Ejj1_segwan
+		from ${_defaultDB}.kcba.Ejung1 WITH (NOLOCK)
+		where Ejj1_singo_no = #{singoNo}
+    </select>
+
+    <insert id="insertRpa">
+		/* RPA입력 */
+		insert into CPS.[dbo].[SDAD100]
+		(SDADMngNo,
+		RpaGbn,
+		Gbn,
+		JisaCode,
+		ComCode,
+		ComSaup,
+		ComNm,
+		EdmsNo,
+		SingoNo,
+		EndYn,
+		UseYn,
+		AddUserKey,
+		AddUserId,
+		AddUserNm,
+		AddDtm
+		)
+		VALUES
+		('0',
+		#{rpaGubun},
+		#{edmsGubun},
+		#{edmsJisaCode},
+		#{comCode},
+		#{comNum},
+		#{comName},
+		#{edmsNo},
+		#{edmsSingoNo},
+		'N',
+		#{useYn},
+		'0',
+		#{_userId},
+		#{_userNm},
+		#{addDtm}
+		)
+	</insert>
+
+    <update id="updateKKOSend">
+		/* RPA입력 */
+		update ${edmsJisaCode}.kcba.impo1
+		set KKOSend = 'O'
+		where impo_singo_no = #{edmsSingoNum}
+	</update>
+
+    <update id="updateKKOSend1">
+		/* RPA입력 */
+		update rms.dbo.recv_impo1
+		set KKOSend = 'O'
+		where impo_singo_no = #{edmsSingoNum}
+	</update>
+
+    <select id="getRpaInfoList" resultType="map">
+        select
+		*
+		from CPS.[dbo].[SDAD100] WITH (NOLOCK)
+		where UseYn = 'Y'
+		<if test='endYn != null and endYn != ""'>AND EndYn = #{endYn}</if>
+		<if test='rpaGubun != null and rpaGubun != ""'>AND RpaGbn = #{rpaGubun}</if>
+		<if test='teamCode != null and teamCode != ""'>AND JisaCode = #{teamCode}</if>
+		<if test='sangho != null and sangho != ""'>AND ComNm LIKE '%' + #{sangho} + '%'</if>
+		<if test='blNo != null and blNo != ""'>AND EdmsNo LIKE '%' + #{blNo} + '%'</if>
+		<if test='edmsGubun != null and edmsGubun != ""'>AND Gbn = #{edmsGubun}</if>
+		<if test='edmsSingoNum != null and edmsSingoNum != ""'>AND SingoNo LIKE '%' + #{edmsSingoNum} + '%'</if>
+		order by EdmsNo, SingoNo
+    </select>
+
+    <update id="updateEndRpa">
+		/* RPA 완료*/
+		update CPS.[dbo].[SDAD100]
+		set EndYn 	= #{endYn},
+		EditUserId 	= #{_userId},
+		EditUserNm 	= #{_userNm},
+		EditDtm 	= #{editDtm}
+		where SDADKey = #{rpaKey}
+	</update>
+
+    <update id="delEndRpa">
+		/* RPA 의뢰취소*/
+		update CPS.[dbo].[SDAD100]
+		set UseYn 	= #{useYn},
+		EditUserId 	= #{_userId},
+		EditUserNm 	= #{_userNm},
+		EditDtm 	= #{editDtm}
+		where SDADKey = #{rpaKey}
+	</update>
+
+    <select id="getImportSingoNoExcel" resultType="map">
+        select EdmsSingoNo
+        from CPS.[dbo].[SDAA100]
+		where EdmsFileCategory = 'B0001'
+		and UseYn='Y'
+		and EdmsSingoNo in (
+		select Impo_singo_no from ${_defaultDB}.kcba.Impo1
+		where Impo_ok_date <![CDATA[ > ]]> CONVERT(varchar(30), GETDATE()-7,112) and Impo_ok_date <![CDATA[ <= ]]> CONVERT(varchar(30), GETDATE(),112))
+    </select>
+
+    <select id="getImportSingoNoExcel1" resultType="map">
+        select Impo_singo_no as 'singo_no'
+        from ${_defaultDB}.kcba.Impo1
+		where Impo_ok_date <![CDATA[ > ]]> CONVERT(varchar(30), GETDATE()-7,112) and Impo_ok_date <![CDATA[ <= ]]> CONVERT(varchar(30), GETDATE(),112)
+		and Impo_singo_no not in ${singo}
+    </select>
+
+    <select id="getExportSingoNoExcel" resultType="map">
+        select EdmsSingoNo
+        from CPS.[dbo].[SDAA100]
+		where EdmsFileCategory = 'B0001'
+		and UseYn='Y'
+		and EdmsSingoNo in (
+		select Expo_singo_no from ${_defaultDB}.kcba.Expo1
+		where Expo_ok_date <![CDATA[ > ]]> CONVERT(varchar(30), GETDATE()-7,112) and Expo_ok_date <![CDATA[ <= ]]> CONVERT(varchar(30), GETDATE(),112))
+    </select>
+
+    <select id="getExportSingoNoExcel1" resultType="map">
+        select Expo_singo_no as 'singo_no'
+        from ${_defaultDB}.kcba.Expo1
+		where Expo_ok_date <![CDATA[ > ]]> CONVERT(varchar(30), GETDATE()-7,112) and Expo_ok_date <![CDATA[ <= ]]> CONVERT(varchar(30), GETDATE(),112)
+		and Expo_singo_no not in ${singo}
+    </select>
+
+    <select id="selectFieldManage" resultType="map">
+        /* 현장관리 조회 */
+        SELECT SDACMKey
+        FROM CPS.dbo.SDAC110 WITH (NOLOCK)
+        WHERE UseYn='Y'
+        <if test='SingoNo != null and SingoNo != ""'>AND SingoNo LIKE '%' + #{SingoNo} + '%'</if>
+        order by SDACMKey desc
+    </select>
+
+    <insert id="saveFieldManage">
+		/* 현장 관리실적 입력 */
+		INSERT INTO CPS.dbo.SDAC110
+		       (SDABMngNo
+				,RegDt
+				,Segwan
+				,Jisa
+				,Team
+				,UserNm
+				,Gbn
+				,SingoCode
+				,SingoNo
+				,ComNm
+				,ComCd
+				,ComNo
+				,GumGbn
+				,JangchiNm
+				,GwanNm
+				,Jubsu
+				,Approve
+				,Issue
+				,Remark
+				,Price
+				,UseYn
+				,AddUserId
+				,AddUserNm
+				,AddDtm)
+		VALUES
+		       (#{SDABMngNo}
+		       ,#{RegDt}
+		       ,#{Segwan}
+		       ,#{Jisa}
+		       ,#{Team}
+		       ,#{UserNm}
+		       ,#{Gbn}
+		       ,#{SingoCode}
+		       ,#{SingoNo}
+		       ,#{ComNm}
+		       ,#{ComCd}
+		       ,#{ComNo}
+		       ,#{GumGbn}
+		       ,#{JangchiNm}
+		       ,#{GwanNm}
+		       ,#{Jubsu}
+			   ,#{Approve}
+			   ,#{Issue}
+			   ,#{Remark}
+		       ,#{Price}
+		       ,#{UseYn}
+		       ,#{AddUserId}
+		       ,#{UserNm}
+		       ,#{addDtm})
+	</insert>
+
+    <select id="findEdmsTeamNoFileList" resultType="map">
+        select * from (
+			select
+			a.Impo_napse_sangho as 'SANGHO', a.UserNM, a.Impo_singo_no as 'SINGO_NO',
+			(select COUNT(EdmsSingoNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsSingoNo = a.Impo_singo_no) as 'aa',
+			(select COUNT(EdmsNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsNo=a.Impo_bl_no) as 'bb'
+			from ${_defaultDB}.kcba.impo1 a WITH (NOLOCK), soo.dbo.CPS_EDMS_Team b WITH (NOLOCK)
+			<where>
+			and a.Impo_key = b.masterKey
+			<if test='teamCode != null and teamCode != ""'>AND b.teamcode = #{teamCode}</if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+			<if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+			</where>) z
+		where z.aa = '0'
+		and z.bb = '0'
+    </select>
+
+    <select id="findEdmsNoFileList" resultType="map">
+        select * from (
+			select
+			a.Impo_napse_sangho as 'SANGHO', a.UserNM, a.Impo_singo_no as 'SINGO_NO',
+			(select COUNT(EdmsSingoNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsSingoNo = a.Impo_singo_no) as 'aa',
+			(select COUNT(EdmsNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsNo=a.Impo_bl_no ) as 'bb'
+			from ${_defaultDB}.kcba.impo1 a
+			<where>
+			and 1 = 1
+			<if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+			<if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Impo_iphang_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Impo_banip_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Impo_singo_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Impo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+			</where> ) z
+		where z.aa = '0'
+		and z.bb = '0'
+    </select>
+
+    <select id="findEdmsExportNoFileList" resultType="map">
+        select * from (
+			select
+			a.Expo_suchulja_sangho as 'SANGHO', a.UserNM, a.expoSingoNo as 'SINGO_NO',
+			(select COUNT(EdmsSingoNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsSingoNo = a.expoSingoNo) as 'aa',
+			(select COUNT(EdmsNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsNo=a.expoIvNo) as 'bb'
+			from soo.dbo.CPS_EDMS_Export a
+			<where>
+			and 1 = 1
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.expoOkDate BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.userId = #{edmsMasterUserId}
+            </if>
+			</where> ) z
+		where z.aa = '0'
+		and z.bb = '0'
+    </select>
+
+    <select id="findEdmsExNoFileList" resultType="map">
+        select * from (
+			select
+			a.Expo_suchulja_sangho as 'SANGHO', a.UserNM, a.Expo_singo_no as 'SINGO_NO',
+			(select COUNT(EdmsSingoNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsSingoNo = a.Expo_singo_no) as 'aa',
+			(select COUNT(EdmsNo) as 'count2' from CPS.[dbo].[SDAA100]
+			where UseYn='Y'
+			and EdmsFileCategory != 'B0001'
+			and EdmsNo=a.Expo_iv_no) as 'bb'
+			from ${_defaultDB}.kcba.expo1 a
+			<where>
+			and 1 = 1
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "suriDay"'>AND a.Expo_ok_date BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+            <if test='edmsMasterUserId != null and edmsMasterUserId != ""'>
+                AND a.UserID = #{edmsMasterUserId}
+            </if>
+			</where> ) z
+		where z.aa = '0'
+		and z.bb = '0'
+    </select>
+
+    <select id="findLoginList" resultType="map">
+        select
+        b.*,
+        (select a.ComSNm from CPS_STD.[dbo].[BSAA100D] a where a.UseYn='Y' and a.BSAADMngNo=b.BSAADMngNo) as 'userParts',
+        (select a.ComJisa from CPS_STD.[dbo].[BSAA100D] a where a.UseYn='Y' and a.BSAADMngNo=b.BSAADMngNo) as 'defaultDB'
+        from CPS_STD.[dbo].[BSAA110] b
+        <where>
+            AND b.UseYn = 'Y'
+            and b.BSAAMngNo='BSAA100M201900001'
+            <if test='userId != null and userId != "" and userId != "null"'>AND b.ComUserId = #{userId}</if>
+            <if test='userPw != null and userPw != "" and userPw != "null"'>AND b.ComUserPw = #{userPw}</if>
+            <if test='userEmail != null and userEmail != "" and userEmail != "null"'>AND b.ComUserCmail = #{userEmail}</if>
+        </where>
+    </select>
+</mapper>

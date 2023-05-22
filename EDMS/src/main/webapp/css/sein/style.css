@@ -1,0 +1,514 @@
+/* @charset "utf-8";
+@import url(http://fonts.googleapis.com/earlyaccess/맑은 고딕.css); */
+/* Main */
+
+/* ---------회원로그인 영역---------
+#login { position:relative; background:url('../../images/sch/common/login_img.jpg') no-repeat 0 0; overflow:hidden; width:964px; height:711px; margin:0 auto;}*/
+.login_body {background:url('../../images/sch/common/login_bg.jpg');}
+#wrap_login {position:relative; width:100%; text-align:center; vertical-align:top;}
+#login { position:relative; background:url('../../images/sch/common/login_img.jpg') no-repeat 0 0; overflow:hidden; width:964px; height:711px; margin:0 auto;}
+#login_form_id {position:relative; left:-105px; top:528px;}
+#login_form_pw {position:absolute; left:470px; top:528px;}
+#login_form_button {position:absolute; left:670px; top:528px;}
+
+
+/* body {background:url(../../images/sch/common/main_back.gif) repeat-x left top; overflow:hidden} */
+#popupbody {background:none; overflow:hidden}
+#wrap {width:100%; *zoom:1; min-width:1010px}
+#wrap:after { content:""; clear:both; display:block}
+#header_area {height:69px; *zoom:1}
+#header_area:after { content:""; clear:both; display:block}
+h1 {display:block; float:left; margin-top:10px; margin-left:22px; _margin-left:11px; height:29px}
+.header_gnb {float:right; margin-top:7px}
+.user_info {float:left; margin-top:7px; font-size:0}
+.user_info img{vertical-align:bottom; margin-bottom:1px}
+.info {color:#103f74; font-weight:bold; font-size:11px; display:inline-block; padding-right:5px; letter-spacing:-1px}
+.info strong {color:#0b4bc1; font-weight:bold}
+.tgnb {float:left; margin-top:9px; *margin-top:8px}
+.tgnb li {float:left; background:url(../../images/sch/contents/login_gnbbar.gif) no-repeat right 2px; padding:0 7px; *background:url(../../images/sch/contents/login_gnbbar.gif) no-repeat right 4px}
+.tgnb li:last-child{background:none}
+.tgnb li.bgnone{background:none}
+.link{float:left; margin-top:3px}
+.link li{float:left}
+
+/* Menu */
+#gnb {clear:both; width:100%; height:29px}
+#gnb ol li.gnb1Depth    {float:left; background:url(../../images/sch/common/main_gnbbar.gif) no-repeat right top}
+#gnb ol li.gnb1Depth:last-child {background-image:none}
+#gnb ol li.gnb1Depth a.gnb1DepthAnchor {display:inline-block; overflow:hidden; color:#FFF; font-weight:bold; text-align:center; padding:7px 0 5px 0; width:126px; font-family:gulim}
+#gnb ol li.gnb1Depth a.gnb1DepthAnchor.on {color:#0b2cbb; background:url(../../images/sch/common/gnb_overback.gif) no-repeat 1px 1px}
+#gnb ol li.gnb1Depth a.gnb1DepthAnchor.off {color:#0b2cbb;}
+#gnb ol li.gnb1Depth a.gnb1DepthAnchor:hover {color:#0b2cbb; background:url(../../images/sch/common/gnb_overback.gif) no-repeat 1px 1px}
+/*#container{clear:both; overflow:hidden}*/
+
+/*#left {position: fixed; top: 87px; width:195px; left: 2px; bottom: 2px; overflow-y:auto; overflow-x:hidden; border:1px solid #cdd7e3}*/
+/*#content {position: fixed; top: 87px; left: 205px; right: 2px; bottom: 2px; overflow-y:scroll; border:1px solid #cdd7e3}
+/*#content_l{position: fixed; top: 87px; left: 7px; right: 2px; bottom: 2px; overflow-y:auto; border:1px solid #cdd7e3}*/
+
+/*#leftMenu {position:relative}*/
+/*#leftMenu h2 {height:34px; background:url(../../images/sch/common/leftmenu_h2back.gif) repeat-x left top; padding:12px 0 0 15px; font-size:15px; font-family:tahoma; color:#252157; font-weight:bold}
+*/
+/* Vertical Navigation */
+.vNav{ position:relative; margin-top:-1px}
+.vNav ul{ margin:0; padding:0; font-size:0}
+.vNav li{ position:relative; background:url(../../images/sch/common/leftmenu_h3back.gif) repeat-x left top; *zoom:1; width:100%}
+.vNav li a { background:url(../../images/sch/common/ico_h3_close.gif) no-repeat 12px 10px; display:block; color:#6d6d6d; font-weight:bold; font-size:11px; padding:7px 0 0 25px; height:25px; position:relative; *zoom:1;}
+.vNav li a span { font-family:tahoma}
+/* .vNav li li {margin-left:-5px} */
+.vNav li li a{background:#fff}
+/* .vNav li li a:hover{background:#f1f1f1} */
+.vNav li li a span{background:url(../../images/sch/common/ico_h4.gif) no-repeat left 4px; font-weight:normal; color:#555; height:19px; padding:0 0 0 5px}
+.vNav li li.active{}
+.vNav li.active a{ color:#252157; border:0}
+.vNav li.active .i{ background:url(../../images/sch/common/ico_h3_open.gif) no-repeat 12px 10px; }
+.vNav li.active li a{ border-bottom:1px solid #f3f3f3; font-size:11px; height:19px; color:#676767}
+.vNav li.active li.active a span{ background:url(../../images/sch/common/ico_h4_over.gif) no-repeat left 4px; font-size:11px; height:19px; color:#214295; font-weight:bold; padding:0 0 0 5px}
+
+.use-sidebar #content {left: 205px}
+.use-sidebar #left {display: block}
+.use-sidebar #separator {/* background: url('img/vertical-separator.gif') repeat-y center top;*/position:fixed; top:30%; left: 200px}
+
+#left {position: fixed; top: 71px; width:0px; left: 2px; bottom: 2px; border:1px solid #cdd7e3; display: none; overflow-y:auto; overflow-x:hidden}
+#separator {position:fixed; top:36%; left: 2px}
+#content {position: fixed; top: 0px; left: 1px; right: 2px; bottom: 2px; overflow-y:auto; overflow-x:hidden; border:1px solid #cdd7e3; padding:10px; background:#fff}
+#popcontent {overflow-y:auto; overflow-x:hidden; padding:0 10px 10px 10px}
+
+
+/* lnb _mjlee*/
+#lnb {background-color:#323C58; width:133px; position:fixed; display:block; left:0; min-height:100%;}
+#lnb li:first-child {padding:1px 0; background-color:#FFFFFF;}
+#lnb li {text-align:center; padding:35px 0 35px; border-top:1px solid #535353;}
+#lnb li a {color:#888; font-size:16px; text-align:center; display:block;}
+#lnb li a span {width:37px; height:37px; display:inline-block; margin-bottom:5px;}
+#lnb li a:hover {color:#fff;}
+#lnb li a .prom {background-position:2px -89px; height:35px;}
+#lnb li a:hover .prom,#lnb .on a .prom {background-position:2px -56px;}
+#lnb li a .direct {background-position:2px -163px;}
+#lnb li a:hover .direct,#lnb .on a .direct {background-position:2px -124px;}
+#lnb li a .end {background-position:-2px -243px;}
+#lnb li a:hover .end,#lnb .on a .end {background-position:-2px -204px;}
+#lnb li a .sett {background-position:-2px -315px; height:35px;}
+#lnb li a:hover .sett,#lnb .on a .sett {background-position:-2px -280px;}
+
+#cont_wrap {margin:20px 20px 15px 160px;}
+.icon {background: url("../../images/sch/common/icon.png") no-repeat; }
+
+
+/**로그인 _mjlee*/
+.top {position:fixed top:0px; width:100%; height:50px; background-color:#323c58; }
+.login {padding-top:200px; text-align:center; margin:0 auto; width:335px;}
+.login p {font-size:13px; color:#323c58; line-height:18px; margin:15px 0 20px;}
+.login .log_box {margin-bottom:5px;}
+.login .log_box  input {width:90%; float:none; font-size:25px; padding:5px 5%; height: 30px;}
+.login .log_box  label {position:absolute; display:none;}
+.login .check label {top:5px;}
+.login .logbtn {background-color:#323c58; color:#fff; display:block; width:100%;  font-size:30px; padding:10px 0; margin-top:10px;}
+.login .serch_btn {text-align:right; font-size:11px;}
+.login .serch_btn a {color:#323c58;}
+.login .serch_btn .search {display:inline-block; width:23px; height: 23px; position:relative; background-position:-63px 0; top:7px;}
+
+
+
+
+/* 컨텐츠 */
+.titlearea{display:inline-block; width:100%; margin:0 0 0 0}
+.contitle {float:left}
+.contitle h2 {font-size:14px; font-family:verdana, "맑은 고딕", 맑은 고딕; font-weight:bold; color:#282828; background:url(../../images/common/ico_h2title.gif) no-repeat left 2px; padding:0 0 0 16px}
+
+.subtitlearea {margin:0}
+.subtitle h3 {color:#282828; font-size:12px; background:url(../images/common/ico_searchtitle.gif) no-repeat 4px 1px; padding:0 0 0 11px; line-height:16px; font-weight:bold; vertical-align:bottom}
+.subtitle h3 span {color:#282828; text-decoration:none}
+
+.clienttitle {display:inline-block}
+.clienttitle h3 {color:#282828; font-size:12px; background:url(../../images/sch/common/ico_searchtitle.gif) no-repeat 4px 1px; padding:0 0 0 11px; line-height:16px; font-weight:bold; vertical-align:bottom; cursor:pointer}
+.clienttitle h3 span {color:#282828; text-decoration:none}
+
+.subtitle2 h4 {color:blue; font-size:11px; padding:0 0 5px 3px; line-height:16px; font-weight:bold; letter-spacing:-1px}
+.subtitle2 h4 span {color:blue; text-decoration:none}
+
+.fold {background:url(../../images/sch/button/btn_fold.gif) no-repeat right 0; padding-right:20px !important}
+.expand {background:url(../../images/sch/button/btn_expand.gif) no-repeat right 0; padding-right:20px !important}
+
+/* button */
+.trbtn {text-align:right; margin-top:-24px; font-size:0}
+.trbtn2 {text-align:right; margin-top:-24px; font-size:0}
+.trbtn3 {text-align:right; font-size:0}
+.trbtn1 {margin-top:0px; margin-bottom:2px; font-size:0}
+.trbtn input {text-align:right; width: 65px; font-size:11px; border:1px solid white;}
+.trbtn select {margin-right:5px; font-size:11px}
+a.rbtn {display:inline-block; vertical-align:top; background:url(../../images/button/btn_img.gif) no-repeat left top; height:24px; padding-left:15px;}
+a.rbtn span {display:inline-block; background:url(../../images/button/btn_img.gif) no-repeat right top; height:24px; line-height:22px; padding:0px 15px 0 0; _padding-top:2px; color:#f1f7ff; font-size:11px; font-weight:bold; letter-spacing:-1px}
+a.ebtn {display:inline-block; vertical-align:top; background:url(../../images/button/btn_img3.gif) no-repeat left top; height:20px; padding-left:10px}
+a.ebtn span {display:inline-block; background:url(../../images/button/btn_img3.gif) no-repeat right top; height:20px; line-height:18px; padding:0px 10px 0 0; _padding-top:2px; color:#f1f7ff; font-size:11px; font-weight:bold; letter-spacing:-1px}
+a.rbtn:hover{background-position:left -28px}
+a.rbtn:hover span{background-position:right -28px}
+
+.tlbtn {text-align:left; margin-top:-24px; font-size:0}
+.total {text-align:right; margin-top:-24px; font-size:0}
+.total select {margin-right:5px; font-size:11px}
+.total input {text-align:right; width: 65px; font-size:11px; border:1px solid white;}
+
+
+a.prbtn {display:inline-block; vertical-align:top; background:url(../../images/sch/button/btn_img2.gif) no-repeat left top; height:24px; padding-left:15px}
+a.prbtn span {display:inline-block; background:url(../../images/sch/button/btn_img2.gif) no-repeat right top; height:24px; line-height:22px; padding:0px 15px 0 0; _padding-top:2px; color:#f1f7ff; font-size:11px; font-weight:bold; letter-spacing:-1px}
+a.prbtn:hover{background-position:left -28px}
+a.prbtn:hover span{background-position:right -28px}
+
+a.frbtn {display:inline-block; vertical-align:top; background:url(../../images/sch/button/btn_img3.gif) no-repeat left top; height:24px; padding-left:15px}
+a.frbtn span {display:inline-block; background:url(../../images/sch/button/btn_img3.gif) no-repeat right top; height:24px; line-height:22px; padding:0px 15px 0 0; _padding-top:2px; color:#f1f7ff; font-size:11px; font-weight:bold; letter-spacing:-1px}
+a.frbtn:hover{background-position:left -28px}
+a.frbtn:hover span{background-position:right -28px}
+
+.inbtn{margin-left:2px;padding:3px 7px 3px 7px;background:#cbd3f7;color:#244695;border:1px solid #6882bd; font-weight:bold; font-size:9px;cursor:pointer}
+.inbtn:hover{background:#efd2df; border:1px solid #c55478; color:#a90b3e}
+
+/* search div */
+.search {/* clear:both;  */width: 100%; display:inline-block; font-size:12px; margin-top:5px;}
+.search table {width: 100%; border-collapse: collapse; border-spacing: 0; border-top:1px solid #cccccc}
+.search th {background:#f0f4f7; border:1px solid #ccd5e4; color:#506380; text-align:left; padding:3px 8px; line-height:14px; font-family:tahoma, "돋움", dotum}
+.search th.right_panel {background:#d8dde9; border:1px solid #9fadc9; color:#506380; text-align:left; padding:3px 8px; line-height:14px; font-family:tahoma, "돋움", dotum}
+.search th.c {text-align:center}
+.search th.r {text-align:right}
+.search th.l {text-align:left}
+.search th.t {vertical-align:top}
+.search th.b {vertical-align:bottom}
+.serach th.m {vertical-align:middle}
+.search th.pt10 {padding-top:10px}
+.search td.br0 {border-right:none}
+.search td.bl0 {border-left:none}
+.search td {border:1px solid #666666; padding:2px 5px; line-height:14px; font-family:tahoma, "굴림", gulim}
+.search td span {display:block; margin:0 8px 0 0}
+.search td span input {margin-right:-2px; font-size:11px}
+.search td span select {margin-right:-2px; font-size:11px}
+.search td select {margin-right:-2px; font-size:11px}
+.search td input {margin-right:-2px; margin-top:1px; font-size:11px}
+.search td span textarea {font-size:11px}
+.search td table.intable {border:none}
+.search td table.intable th {border:none; text-align:right; background:none; letter-spacing:-1px}
+.search td table.intable td {border:none}
+.search td.r {text-align:right}
+.search td.c {text-align:center}
+.search td.cb {text-align:center; border:1px solid #778899;}
+
+/**yhjung**/
+.search td.tdr {text-align:right; background:#b9c5dd; color:#222222; font-weight:bold;}
+.search td.tdc {text-align:center; background:#b9c5dd; color:#222222; font-weight:bold;}
+.search td.tdl {background:#b9c5dd; color:#222222; font-weight:bold;}
+.search td.dr {text-align:right; background:#dbe2f0; color:#222222; font-weight:bold;}
+.search td.dc {text-align:center; background:#dbe2f0; color:#222222; font-weight:bold;}
+.search td.dl {background:#dbe2f0;color:#222222; font-weight:bold;}
+.search td.dy {background:#ffff80;color:#000000;}
+.search td.dls {background:#dbe2f0;color:#oooooo; font-weight:bold;}
+.search td.wdr {text-align:right; color:#222222;}
+.search td.wdc {text-align:center; color:#222222;}
+.search td.wdl {color:#222222;}
+.search td table.tablecss {width:100%; border:none; border-spacing:0; padding:0px 0px; margin:0 0 0 0}
+.search td table.tablecss td.tdcss {border:none; border-spacing:0; padding:0px 1px; margin:0 0 0 0;}
+
+.file_input_textbox {float:left}
+.file_input_div {position:relative; width:100px; height:23px;overflow:hidden;}
+.file_input_button {position:absolute; width:100px; top:0px; background-color:#4f4f4f; color:#FFFFFF; border-style:solid;}
+.file_input_hidden {font-size:45px; position:absolute; right:0px; top:0px; opacity:0; filter:alpha(opacity=0); -ms-filter:"alpha(opacity=0)"; -khtml-opacity:0; -moz-opacity:0;}
+
+th.r {text-align:right}
+
+input.calendar{background:url(../../images/button/btn_calender.gif) no-repeat right 2px; font-size:11px; cursor:pointer; text-align:center; padding-right:18px; border: 1px solid #c0c0c0;}
+input.calendar:hover{background:url(../../images/button/btn_calender.gif) no-repeat right 2px; font-size:11px; text-align:center; padding-right:18px; border: 1px solid #c0c0c0; }
+input.numeric {text-align:right}
+input.c {text-align:center}
+input.p {text-align:right; width:50px; margin-right:3px}
+
+.search td img{vertical-align:bottom}
+span.att {background:url(../../images/sch/common/ico_att.gif) no-repeat left 2px; padding:0 0 0 10px; font-family:tahoma, "돋움", dotum; font-size:11px}
+
+/* 그리드용 attation */
+span.gatt {background:url(../../images/sch/common/ico_att.gif) no-repeat left 2px; padding:0 0 0 10px; font-family:tahoma, "돋움", dotum; font-size:11px}
+span.ged {color:blue}
+
+.search table table {border:1px solid #d6d6d6; margin:3px 0}
+.search table table th {border:1px solid #d6d6d6; padding:2px 2px; background:#f2f2f2; font-weight:bold; text-align:right; color:#6f6f6f}
+.search table table td {border:1px solid #d6d6d6; padding:2px 2px}
+
+.view {clear:both; width: 100%; display:inline-block; font-size:11px}
+.view table {width: 100%; border-collapse: collapse; border-spacing: 0; border:1px solid #ccd5e4}
+.view th {background:#f0f4f7; border:1px solid #ccd5e4; color:#506380; text-align:center; padding:3px 8px; line-height:14px}
+.view td {border:1px solid #ccd5e4; padding:3px 8px; line-height:14px}
+.input td img{vertical-align:bottom}
+
+a.btn_pagingl {display:inline-block; background:url(../../images/sch/button/btn_pagingl.gif) no-repeat; width:19px; height:20px; vertical-align:middle}
+a.btn_pagingr {display:inline-block; background:url(../../images/sch/button/btn_pagingr.gif) no-repeat; width:19px; height:20px; vertical-align:middle}
+a.btn_pagingfl {display:inline-block; background:url(../../images/sch/button/btn_pagingfl.gif) no-repeat; width:19px; height:20px; vertical-align:middle}
+a.btn_pagingfr {display:inline-block; background:url(../../images/sch/button/btn_pagingfr.gif) no-repeat; width:19px; height:20px; vertical-align:middle}
+
+.paging .total {display:inline; padding:0 0 0 8px; background:url(../../images/sch/button/ico_pagingl.gif) no-repeat left 2px}
+.paging .totalr {display:inline; background:url(../../images/sch/button/ico_pagingr.gif) no-repeat right 2px; padding:0 6px 0 0}
+
+/* function popup */
+.function_pop {background:#eee; border:1px solid #3f6087; padding:0 0 5px 0; width:200px; position:absolute; right:11px; top:44px; display:none}
+.function_pop p {background:#294264; font-family:verdana, "돋움", dotum; font-size:11px; padding:4px 5px 4px 12px; color:white; font-weight:bold}
+.function_pop p img {float:right; padding-top:2px; *position:absolute; right:2px; top:5px}
+.function_pop ul {padding:4px 5px}
+.function_pop li {border-bottom:1px solid #dfdfdf; height:18px; padding-top:3px}
+.function_pop li a {background:url(../../images/sch/common/ico_arrow.gif) no-repeat 7px 5px; padding:0 0 0 13px; color:#414142; font-size:11px; font-family:verdana, "돋움", dotum; letter-spacing:-1px; font-weight:bold; display:block}
+.function_pop li a:hover{background:url(../../images/sch/common/ico_arrow_over.gif) no-repeat 7px 5px; padding:0 0 0 13px; color:#c10b0b; text-decoration:underline}
+
+/* function popup */
+.function_pop2 {background:#eee; border:1px solid #3f6087; padding:0 0 5px 0; width:200px; position:absolute; right:11px; top:271px; display:none}
+.function_pop2 p {background:#294264; font-family:verdana, "돋움", dotum; font-size:11px; padding:4px 5px 4px 12px; color:white; font-weight:bold}
+.function_pop2 p img {float:right; padding-top:2px; *position:absolute; right:2px; top:5px}
+.function_pop2 ul {padding:4px 5px}
+.function_pop2 li {border-bottom:1px solid #dfdfdf; height:18px; padding-top:3px}
+.function_pop2 li a {background:url(../../images/sch/common/ico_arrow.gif) no-repeat 7px 5px; padding:0 0 0 13px; color:#414142; font-size:11px; font-family:verdana, "돋움", dotum; letter-spacing:-1px; font-weight:bold; display:block}
+.function_pop2 li a:hover{background:url(../../images/sch/common/ico_arrow_over.gif) no-repeat 7px 5px; padding:0 0 0 13px; color:#c10b0b; text-decoration:underline}
+
+#pageNavi {padding-bottom:5px}
+#dataGrid {margin-top:4px}
+
+#pageNavi1 {padding-bottom:5px}
+
+#pageNavi2 {padding-bottom:5px}
+#dataGrid2 {margin-top:4px}
+
+#pageNavi3 {padding-bottom:5px}
+#dataGrid3 {margin-top:4px}
+
+/* rignt panel */
+.panel_show {width:25%; position:absolute; right:0; top:0;}
+.panel_hide {width:0%;display:none; position:absolute; right:0; top:0;}
+#right_panel {height: 100%; z-index:1; background-color:#f7f7f7; border:1px solid #b5b7ba; padding:7px; word-break:break-all}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+// Dropdown menus
+// --------------------------------------------------
+
+
+// Dropdown arrow/caret
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  border-top:   @caret-width-base dashed;
+  border-right: @caret-width-base solid transparent;
+  border-left:  @caret-width-base solid transparent;
+}
+
+// The dropdown wrapper (div)
+.dropup,
+.dropdown {
+  position: relative;
+}
+
+// Prevent the focus on the dropdown toggle when closing dropdowns
+.dropdown-toggle:focus {
+  outline: 0;
+}
+
+// The dropdown menu (ul)
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: @zindex-dropdown;
+  display: none; // none by default, but block on "open" of the menu
+  float: left;
+  min-width: 160px;
+  padding: 5px 0;
+  margin: 2px 0 0; // override default ul
+  list-style: none;
+  font-size: @font-size-base;
+  text-align: left; // Ensures proper alignment if parent has it changed (e.g., modal footer)
+  background-color: @dropdown-bg;
+  border: 1px solid @dropdown-fallback-border; // IE8 fallback
+  border: 1px solid @dropdown-border;
+  border-radius: @border-radius-base;
+  .box-shadow(0 6px 12px rgba(0,0,0,.175));
+  background-clip: padding-box;
+
+  // Aligns the dropdown menu to right
+  //
+  // Deprecated as of 3.1.0 in favor of `.dropdown-menu-[dir]`
+  &.pull-right {
+    right: 0;
+    left: auto;
+  }
+
+  // Dividers (basically an hr) within the dropdown
+  .divider {
+    .nav-divider(@dropdown-divider-bg);
+  }
+
+  // Links within the dropdown menu
+  > li > a {
+    display: block;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: normal;
+    line-height: @line-height-base;
+    color: @dropdown-link-color;
+    white-space: nowrap; // prevent links from randomly breaking onto new lines
+  }
+}
+
+// Hover/Focus state
+.dropdown-menu > li > a {
+  &:hover,
+  &:focus {
+    text-decoration: none;
+    color: @dropdown-link-hover-color;
+    background-color: @dropdown-link-hover-bg;
+  }
+}
+
+// Active state
+.dropdown-menu > .active > a {
+  &,
+  &:hover,
+  &:focus {
+    color: @dropdown-link-active-color;
+    text-decoration: none;
+    outline: 0;
+    background-color: @dropdown-link-active-bg;
+  }
+}
+
+// Disabled state
+//
+// Gray out text and ensure the hover/focus state remains gray
+
+.dropdown-menu > .disabled > a {
+  &,
+  &:hover,
+  &:focus {
+    color: @dropdown-link-disabled-color;
+  }
+
+  // Nuke hover/focus effects
+  &:hover,
+  &:focus {
+    text-decoration: none;
+    background-color: transparent;
+    background-image: none; // Remove CSS gradient
+    .reset-filter();
+    cursor: @cursor-disabled;
+  }
+}
+
+// Open state for the dropdown
+.open {
+  // Show the menu
+  > .dropdown-menu {
+    display: block;
+  }
+
+  // Remove the outline when :focus is triggered
+  > a {
+    outline: 0;
+  }
+}
+
+// Menu positioning
+//
+// Add extra class to `.dropdown-menu` to flip the alignment of the dropdown
+// menu with the parent.
+.dropdown-menu-right {
+  left: auto; // Reset the default from `.dropdown-menu`
+  right: 0;
+}
+// With v3, we enabled auto-flipping if you have a dropdown within a right
+// aligned nav component. To enable the undoing of that, we provide an override
+// to restore the default dropdown menu alignment.
+//
+// This is only for left-aligning a dropdown menu within a `.navbar-right` or
+// `.pull-right` nav component.
+.dropdown-menu-left {
+  left: 0;
+  right: auto;
+}
+
+// Dropdown section headers
+.dropdown-header {
+  display: block;
+  padding: 3px 20px;
+  font-size: @font-size-small;
+  line-height: @line-height-base;
+  color: @dropdown-header-color;
+  white-space: nowrap; // as with > li > a
+}
+
+// Backdrop to catch body clicks on mobile, etc.
+.dropdown-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  z-index: (@zindex-dropdown - 10);
+}
+
+// Right aligned dropdowns
+.pull-right > .dropdown-menu {
+  right: 0;
+  left: auto;
+}
+
+// Allow for dropdowns to go bottom up (aka, dropup-menu)
+//
+// Just add .dropup after the standard .dropdown class and you're set, bro.
+// TODO: abstract this so that the navbar fixed styles are not placed here?
+
+.dropup,
+.navbar-fixed-bottom .dropdown {
+  // Reverse the caret
+  .caret {
+    border-top: 0;
+    border-bottom: @caret-width-base solid;
+    content: "";
+  }
+  // Different positioning for bottom up menu
+  .dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    margin-bottom: 2px;
+  }
+}
+
+
+// Component alignment
+//
+// Reiterate per navbar.less and the modified component alignment there.
+
+@media (min-width: @grid-float-breakpoint) {
+  .navbar-right {
+    .dropdown-menu {
+      .dropdown-menu-right();
+    }
+    // Necessary for overrides of the default right aligned menu.
+    // Will remove come v4 in all likelihood.
+    .dropdown-menu-left {
+      .dropdown-menu-left();
+    }
+  }
+}

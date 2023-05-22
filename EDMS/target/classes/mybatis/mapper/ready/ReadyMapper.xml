@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.edms.biz1.readyManagement.ReadyMapper">
+    <select id="selectImportList" resultType="map">
+		SELECT datas.*
+        FROM (
+        select ROW_NUMBER() OVER (ORDER BY a.SN desc) AS 'rownum',
+		a.SN, a.Rpt_No, a.Mas_BlNo, a.BlNo, a.Mrn, a.Nab_Firm,  a.Nab_SdNo, a.Rece_Result, a.Lis_Day, a.REG_ID
+		from edicus.[dbo].[CUSDEC929A1] a
+		<where>
+		    AND a.BlNo = ''
+		    and a.Rpt_Seq = '00'
+            <if test='edmsNo != null and edmsNo != ""'>AND a.BlNo LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Rece_Result LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Rpt_No LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Arr_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Inc_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Rpt_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Lis_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+        </where>
+        union all
+        select ROW_NUMBER() OVER (ORDER BY a.SN desc) AS 'rownum',
+		a.SN, a.Rpt_No, a.Mas_BlNo, a.BlNo, a.Mrn, a.Nab_Firm,  a.Nab_SdNo, a.Rece_Result, a.Lis_Day, a.REG_ID
+		from edicus.[dbo].[CUSDEC929A1] a
+		<where>
+		    AND a.BlNo != ''
+		    and a.Rpt_Seq = '00'
+            <if test='edmsNo != null and edmsNo != ""'>AND a.BlNo LIKE '%' + #{edmsNo} + '%'</if>
+            <if test='edmsStatus != null and edmsStatus != ""'>AND a.Rece_Result LIKE #{edmsStatus} + '%'</if>
+            <if test='singoNo != null and singoNo != ""'>AND a.Rpt_No LIKE '%' + #{singoNo} + '%'</if>
+            <if test='_DateType != null and _DateType != "ALL" and (strFromDate != null and strFromDate != "") and (strToDate != null and strToDate != "")'>
+                <choose>
+                    <when test='_DateType == "iphangDay"'>AND a.Arr_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "banipDay"'>AND a.Inc_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "singoDay"'>AND a.Rpt_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                    <when test='_DateType == "suriDay"'>AND a.Lis_Day BETWEEN #{strFromDate} AND #{strToDate}</when>
+                </choose>
+            </if>
+        </where>
+        ) datas
+        <if test='_pageNumber != null and _pageNumber != "" and _pageRow != null and _pageRow != ""'>
+            WHERE datas.rownum BETWEEN (((CONVERT(INTEGER, #{_pageNumber})) * (CONVERT(INTEGER, #{_pageRow}))) +1) AND ((CONVERT(INTEGER, #{_pageNumber}) + 1) * CONVERT(INTEGER, #{_pageRow}))
+        </if>
+        ORDER BY datas.SN desc
+    </select>
+
+    <select id="selectImportFieldStatusList" resultType="map">
+        SELECT
+        Nab_Firm, Ju_Name, Chk_Pa_Name, Rpt_Day,
+		REG_ID, Chk_Pa_Mark, Cus,
+		STUFF((
+        SELECT ','+ Ran_No
+        FROM edicus.[dbo].[CUSDEC929B1]
+        where SN = (select SN from edicus.[dbo].[CUSDEC929A1]
+		where Rpt_No = #{singoNo})
+		and Cs_Chk_Mark IN  ( 'O','R','T','W','Y' )
+		        FOR XML PATH('')
+		    ), 1, 1, '') AS Ran_No,
+		Nab_Code, Nab_SdNo
+		FROM edicus.[dbo].[CUSDEC929A1] WITH (NOLOCK)
+		where Rpt_No = #{singoNo}
+		and Rpt_Seq = '00'
+    </select>
+
+    <select id="selectImportJungFieldStatusList" resultType="map">
+        select
+		Nab_Firm, Pson_Name, Rpt_Day, Imp_Cus
+		from edicus.[dbo].CUSDMR5FEA1 WITH (NOLOCK)
+		where Imp_Rpt_No = #{singoNo}
+		and Imp_Rpt_Seq = '00'
+    </select>
+</mapper>
